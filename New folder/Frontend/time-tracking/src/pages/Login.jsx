@@ -1,78 +1,76 @@
 import { useState } from "react";
+import { useAuth } from "../context/AuthProvider";
 import { useNavigate } from "react-router-dom";
-import authApi from "../api/auth";
 
 export default function Login() {
-  const navigate = useNavigate();
   const [form, setForm] = useState({ username: "", password: "" });
+  const { login } = useAuth();
+  const navigate = useNavigate();
   const [error, setError] = useState("");
-
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-
     try {
-      const res = await authApi.login(form);
-      // Save token and role returned from server (backend returns { token, user })
-      const token = res?.data?.token;
-      const role = res?.data?.role ?? res?.data?.user?.role;
-
-      if (token) localStorage.setItem("token", token);
-      if (role) localStorage.setItem("role", role);
-
-      if (role === "admin") navigate("/admin/dashboard");
-      else navigate("/employee/dashboard");
+      // 1. Perform Login
+      await login(form.username, form.password);
+      
+      // 2. Check Role directly from storage (since state updates are async)
+      const user = JSON.parse(localStorage.getItem("user"));
+      
+      // 3. Redirect based on Role
+      if (user?.role === "employee") {
+        navigate("/employee/dashboard");
+      } else {
+        navigate("/admin/dashboard");
+      }
     } catch (err) {
-      // Log full error for debugging and show server message when available
-      // eslint-disable-next-line no-console
-      console.error("Login error:", err);
-      const serverMsg = err?.response?.data?.message || err?.response?.data || null;
-      setError(serverMsg || "Invalid username or password");
+      console.error(err);
+      setError("Invalid credentials. Please try again.");
     }
   };
 
   return (
-    <div className="flex items-center justify-center h-screen bg-gray-100">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white p-8 rounded-lg shadow-lg w-full max-w-sm"
-      >
-        <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">Login</h1>
+    <div className="min-h-screen flex">
+      {/* Left Side (Dark) */}
+      <div className="hidden lg:flex w-1/2 bg-slate-900 text-white items-center justify-center p-12 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-600/20 to-transparent"></div>
+        <div className="relative z-10 max-w-md">
+          <h1 className="text-5xl font-bold mb-6 tracking-tight">Enterprise<br/>Time Tracking.</h1>
+          <p className="text-slate-400 text-lg">Streamline attendance, manage shifts, and boost productivity with our next-gen platform.</p>
+        </div>
+      </div>
+      
+      {/* Right Side (Light) */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-slate-50">
+        <div className="w-full max-w-md bg-white p-10 rounded-2xl shadow-xl border border-slate-100">
+          <h2 className="text-2xl font-bold text-slate-900 mb-2">Welcome Back</h2>
+          <p className="text-slate-500 mb-8">Please enter your details to sign in.</p>
+          
+          {error && <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100">{error}</div>}
 
-        {error && <p className="text-red-600 mb-4 text-center">{error}</p>}
-
-        <label className="block mb-4">
-          <span className="text-gray-700 font-medium">Username</span>
-          <input
-            type="text"
-            name="username"
-            value={form.username}
-            onChange={handleChange}
-            required
-            className="mt-1 block w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none"
-          />
-        </label>
-
-        <label className="block mb-6">
-          <span className="text-gray-700 font-medium">Password</span>
-          <input
-            type="password"
-            name="password"
-            value={form.password}
-            onChange={handleChange}
-            required
-            className="mt-1 block w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none"
-          />
-        </label>
-
-        <button className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
-          Login
-        </button>
-      </form>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Username</label>
+              <input 
+                className="input-field" 
+                autoFocus 
+                value={form.username} 
+                onChange={e => setForm({...form, username: e.target.value})} 
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
+              <input 
+                type="password" 
+                className="input-field" 
+                value={form.password} 
+                onChange={e => setForm({...form, password: e.target.value})} 
+              />
+            </div>
+            <button className="w-full btn-primary py-3">Sign In</button>
+          </form>
+        </div>
+      </div>
     </div>
   );
 }

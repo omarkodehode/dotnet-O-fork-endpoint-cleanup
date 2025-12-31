@@ -1,64 +1,43 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
+import ProtectedRoute from "./components/ProtectedRoute";
+
+// Admin Imports
+import AdminLayout from "./components/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
 import Employees from "./pages/admin/Employees";
-import CreateEmployee from "./pages/admin/CreateEmployee";
-import EditEmployee from "./pages/admin/EditEmployee";
-import Absences from "./pages/admin/Absences";
-import CreateAbsence from "./pages/admin/CreateAbsence";
-import EditAbsence from "./pages/admin/EditAbsence";
+// import Absences from "./pages/admin/Absences"; // Uncomment when you have this file
+
+// Employee Imports
 import EmployeeDashboard from "./pages/employee/EmployeeDashboard";
-import AdminLayout from "./components/AdminLayout";
-
-function RequireAuth({ children, role }) {
-  const token = localStorage.getItem("token");
-  const userRole = localStorage.getItem("role");
-
-  if (!token) return <Navigate to="/login" replace />;
-  if (role && userRole !== role) return <Navigate to="/login" replace />;
-
-  return children;
-}
+import EmployeeAbsences from "./pages/employee/Absences";
+import ClockInOut from "./pages/employee/ClockInOut";
 
 export default function App() {
   return (
     <Routes>
-      {/* Login page */}
-      <Route path="/login" element={<Login />} />
+      <Route path="/" element={<Login />} />
 
-      {/* Admin routes nested under AdminLayout */}
-      <Route
-        path="/admin/*"
-        element={
-          <RequireAuth role="admin">
-            <AdminLayout>
-              <Routes>
-                <Route path="dashboard" element={<Dashboard />} />
-                <Route path="employees" element={<Employees />} />
-                <Route path="employees/create" element={<CreateEmployee />} />
-                <Route path="employees/edit/:id" element={<EditEmployee />} />
-                <Route path="absences" element={<Absences />} />
-                <Route path="absences/create" element={<CreateAbsence />} />
-                <Route path="absences/edit/:id" element={<EditAbsence />} />
-                <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
-              </Routes>
-            </AdminLayout>
-          </RequireAuth>
-        }
-      />
+      {/* ---------------- EMPLOYEE ROUTES ---------------- */}
+      <Route element={<ProtectedRoute allowedRoles={["employee"]} />}>
+        <Route path="/employee/dashboard" element={<EmployeeDashboard />} />
+        <Route path="/employee/absences" element={<EmployeeAbsences />} />
+        <Route path="/employee/clock-in-out" element={<ClockInOut />} />
+      </Route>
 
-      {/* Employee routes */}
-      <Route
-        path="/employee/dashboard"
-        element={
-          <RequireAuth role="employee">
-            <EmployeeDashboard />
-          </RequireAuth>
-        }
-      />
+      {/* ---------------- ADMIN ROUTES ---------------- */}
+      <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
+        <Route path="/admin" element={<AdminLayout />}>
+          {/* The "index" route loads when you go to /admin/ */}
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="employees" element={<Employees />} />
+          {/* <Route path="absences" element={<Absences />} /> */}
+        </Route>
+      </Route>
 
-      {/* Redirect unknown routes */}
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      {/* Catch-all: Redirect unknown URLs to Login */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

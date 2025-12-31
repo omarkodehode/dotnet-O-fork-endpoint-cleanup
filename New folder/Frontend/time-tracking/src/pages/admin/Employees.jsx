@@ -1,107 +1,75 @@
 import { useEffect, useState } from "react";
-import Toast from "../../components/Toast";
-import { useNavigate } from "react-router-dom";
 import employeeApi from "../../api/employeeApi";
+import { useNavigate } from "react-router-dom";
 
 export default function Employees() {
-  const navigate = useNavigate();
   const [employees, setEmployees] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-
-  const fetchEmployees = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const res = await employeeApi.getEmployees();
-      // axios returns response object; ensure data extraction
-      setEmployees(res.data ?? res);
-    } catch (err) {
-      setError("Failed to load employees.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const navigate = useNavigate();
 
   useEffect(() => {
-    fetchEmployees();
+    employeeApi.getAll().then((res) => setEmployees(res.data)).catch(console.error);
   }, []);
 
-  const handleDelete = async (id) => {
-    if (!confirm("Delete this employee?")) return;
-    try {
-      await employeeApi.deleteEmployee(id);
-      setSuccess("Employee deleted");
-      fetchEmployees();
-      setTimeout(() => setSuccess(""), 3000);
-    } catch {
-      setError("Failed to delete employee.");
-    }
-  };
-
   return (
-    <div className="space-y-6 max-w-5xl mx-auto p-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-800">Employees</h1>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
         <div>
-          <button
-            onClick={() => navigate("/admin/employees/create")}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          >
-            Create Employee
-          </button>
+          <h1 className="text-2xl font-bold text-slate-900">Team Members</h1>
+          <p className="text-slate-500 text-sm mt-1">Manage users, roles, and details.</p>
         </div>
+        <button
+          onClick={() => navigate("/admin/employees/create")}
+          className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg shadow-indigo-600/20 transition-all flex items-center gap-2"
+        >
+          <span>+</span> Add Employee
+        </button>
       </div>
 
-      <Toast message={error} type="error" onClose={() => setError("")} />
-      <Toast message={success} type="success" onClose={() => setSuccess("")} />
-
-      <div className="bg-white p-4 rounded shadow">
-        {loading ? (
-          <p>Loading...</p>
-        ) : (
-          <table className="w-full text-left">
-            <thead>
-              <tr className="border-b">
-                <th className="py-2">ID</th>
-                <th className="py-2">Name</th>
-                <th className="py-2">Position</th>
-                <th className="py-2">UserId</th>
-                <th className="py-2">Actions</th>
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <table className="w-full text-left border-collapse">
+          <thead className="bg-slate-50 border-b border-slate-200">
+            <tr>
+              <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Employee</th>
+              <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Role/Position</th>
+              <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Hire Date</th>
+              <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {employees.map((e) => (
+              <tr key={e.id} className="hover:bg-slate-50/80 transition-colors group">
+                <td className="px-6 py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm">
+                      {e.fullName.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-slate-900">{e.fullName}</p>
+                      <p className="text-xs text-slate-500">ID: #{e.id}</p>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-6 py-4">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
+                    {e.position || "Staff"}
+                  </span>
+                </td>
+                <td className="px-6 py-4 text-slate-500 text-sm">
+                  {new Date(e.hireDate).toLocaleDateString()}
+                </td>
+                <td className="px-6 py-4 text-right">
+                  <button className="text-slate-400 hover:text-indigo-600 font-medium text-sm transition-colors mr-3">Edit</button>
+                  <button className="text-slate-400 hover:text-rose-600 font-medium text-sm transition-colors">Delete</button>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {employees.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="py-4 text-center text-gray-500">No employees found.</td>
-                </tr>
-              )}
-              {employees.map((e) => (
-                <tr key={e.id} className="border-b">
-                  <td className="py-2">{e.id}</td>
-                  <td className="py-2">{e.fullName ?? e.name ?? "-"}</td>
-                  <td className="py-2">{e.position ?? "-"}</td>
-                  <td className="py-2">{e.userId ?? "-"}</td>
-                  <td className="py-2">
-                    <button
-                      onClick={() => navigate(`/admin/employees/edit/${e.id}`)}
-                      className="mr-2 text-sm px-3 py-1 bg-yellow-400 rounded hover:bg-yellow-500"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(e.id)}
-                      className="text-sm px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+            ))}
+            {employees.length === 0 && (
+              <tr>
+                <td colSpan="4" className="text-center py-12 text-slate-500">No employees found.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );

@@ -1,39 +1,54 @@
-import React from "react";
 import { Link, useLocation } from "react-router-dom";
 
-export default function Sidebar({ open, setOpen }) {
+export default function Sidebar() {
   const location = useLocation();
 
-  const menuItems = [
-    { name: "Dashboard", path: "/admin/dashboard" },
-    { name: "Employees", path: "/admin/employees" },
-    { name: "Create Employee", path: "/admin/employees/create" },
-    { name: "Absences", path: "/admin/absences" },
-    { name: "Create Absence", path: "/admin/absences/create" },
-  ];
+  const NavItem = ({ to, icon, label }) => {
+    // Check if this link is currently active
+    const isActive = location.pathname.startsWith(to);
+    return (
+      <Link
+        to={to}
+        className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group mb-1 ${
+          isActive 
+            ? "bg-primary-600 text-white shadow-md shadow-primary-900/20" 
+            : "text-slate-400 hover:bg-slate-800 hover:text-white"
+        }`}
+      >
+        <span className="text-xl">{icon}</span>
+        <span className="font-medium text-sm">{label}</span>
+      </Link>
+    );
+  };
 
   return (
-    <aside
-      className={`fixed inset-y-0 left-0 bg-gray-800 text-white w-64 transform md:translate-x-0 transition-transform duration-300 z-50 ${
-        open ? "translate-x-0" : "-translate-x-full"
-      } md:relative`}
-    >
-      <div className="p-6 text-2xl font-bold border-b border-gray-700">Time Tracker</div>
+    <aside className="w-64 bg-slate-900 text-white flex flex-col h-screen fixed left-0 top-0 z-30 border-r border-slate-800">
+      <div className="p-6 flex items-center gap-2 mb-2">
+        <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center font-bold text-white">T</div>
+        <h1 className="text-xl font-bold tracking-tight text-white">
+          Time<span className="text-primary-500">Track</span>
+        </h1>
+      </div>
 
-      <nav className="mt-4 flex flex-col">
-        {menuItems.map((item) => (
-          <Link
-            key={item.name}
-            to={item.path}
-            className={`px-6 py-3 hover:bg-gray-700 transition-colors ${
-              location.pathname === item.path ? "bg-gray-700" : ""
-            }`}
-            onClick={() => setOpen(false)}
-          >
-            {item.name}
-          </Link>
-        ))}
+      <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
+        <div className="px-4 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 mt-4">Overview</div>
+        <NavItem to="/admin/dashboard" icon="📊" label="Dashboard" />
+        
+        <div className="px-4 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 mt-6">Management</div>
+        <NavItem to="/admin/employees" icon="👥" label="Employees" />
+        <NavItem to="/admin/absences" icon="📅" label="Absences" />
+        <NavItem to="/admin/time-entries" icon="⏱" label="Time Entries" />
       </nav>
+
+      <div className="p-4 border-t border-slate-800">
+        <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-slate-800/50 border border-slate-700/50">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-primary-500 to-indigo-500 flex items-center justify-center text-xs font-bold">AD</div>
+          <div className="overflow-hidden">
+            <p className="font-medium text-sm text-white truncate">Administrator</p>
+            <p className="text-xs text-slate-500 truncate">admin@company.com</p>
+          </div>
+        </div>
+      </div>
     </aside>
   );
 }

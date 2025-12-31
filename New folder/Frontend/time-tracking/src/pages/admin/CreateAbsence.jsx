@@ -14,21 +14,28 @@ export default function CreateAbsence() {
     e.preventDefault();
     setError("");
     try {
-      await absenceApi.createAbsence(form);
+      // Ensure EmployeeId is an integer
+      const payload = {
+        ...form,
+        employeeId: parseInt(form.employeeId)
+      };
+      
+      await absenceApi.createAbsence(payload);
       navigate("/admin/absences");
     } catch (err) {
       console.error(err);
-      setError("Failed to create absence.");
+      setError("Failed to create absence. Verify the Employee ID exists.");
     }
   };
 
   return (
     <div className="p-6 max-w-md mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Add Absence</h1>
+      <h1 className="text-2xl font-bold mb-4">Add Absence (Admin)</h1>
       {error && <p className="text-red-600 mb-4">{error}</p>}
 
       <form onSubmit={handleSubmit} className="bg-white p-6 rounded shadow space-y-4">
         <input
+          type="number" 
           name="employeeId"
           placeholder="Employee ID"
           value={form.employeeId}

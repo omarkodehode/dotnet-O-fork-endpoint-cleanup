@@ -1,8 +1,7 @@
-import apiClient from "./apiClient";
+import api from "./apiClient";
 
-export const getDashboard = async () => {
-  const res = await apiClient.get("/dashboard"); // Adjust endpoint if needed
-  return res.data;
+const dashboardApi = {
+  getStats: () => api.get("/dashboard/stats"),
 };
 
-export default { getDashboard };
+export default dashboardApi;

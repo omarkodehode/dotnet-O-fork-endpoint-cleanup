@@ -1,55 +1,53 @@
-import { useState, useEffect } from "react";
-import api from "../../api/api";
+import { useState } from "react";
+// ✅ FIXED: Import from 'apiClient', not 'api'
+import api from "../../api/apiClient"; 
 
 export default function ClockInOut() {
-  const [status, setStatus] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState("idle"); // idle, success, error
+  const [message, setMessage] = useState("");
 
-  const clockIn = async () => {
-    setLoading(true);
+  const handleClock = async (type) => {
     try {
-      await api.post("/clockin/1"); // replace 1 with employeeId from login
-      setStatus("Clocked In successfully!");
+      // type will be "clockin" or "clockout"
+      await api.post(`/employee/${type}`);
+      setStatus("success");
+      setMessage(type === "clockin" ? "You are now clocked in." : "You have clocked out. Have a good evening!");
     } catch (err) {
-      setStatus(err.response?.data || "Error clocking in");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const clockOut = async () => {
-    setLoading(true);
-    try {
-      await api.post("/clockout/1");
-      setStatus("Clocked Out successfully!");
-    } catch (err) {
-      setStatus(err.response?.data || "Error clocking out");
-    } finally {
-      setLoading(false);
+      setStatus("error");
+      // Read specific error message from backend if available
+      const errMsg = err.response?.data?.message || err.response?.data || "Action failed.";
+      setMessage(errMsg);
     }
   };
 
   return (
-    <div className="p-6 max-w-lg mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Clock In / Clock Out</h1>
-      {status && <p className="mb-4 text-green-600">{status}</p>}
+    <div className="max-w-xl mx-auto py-12 px-6">
+      <h1 className="text-3xl font-bold text-slate-900 mb-2 text-center">Time Clock</h1>
+      <p className="text-slate-500 text-center mb-10">Record your daily attendance.</p>
 
-      <div className="flex gap-4">
-        <button
-          onClick={clockIn}
-          disabled={loading}
-          className="flex-1 bg-blue-600 text-white p-4 rounded hover:bg-blue-700"
+      <div className="grid grid-cols-2 gap-6 mb-8">
+        <button 
+          onClick={() => handleClock("clockin")}
+          className="h-40 rounded-2xl bg-emerald-50 border-2 border-emerald-100 flex flex-col items-center justify-center gap-3 hover:bg-emerald-100 hover:scale-105 transition-all group"
         >
-          Clock In
+          <span className="text-4xl group-hover:scale-110 transition-transform">☀️</span>
+          <span className="text-emerald-800 font-bold text-lg">Clock In</span>
         </button>
-        <button
-          onClick={clockOut}
-          disabled={loading}
-          className="flex-1 bg-red-600 text-white p-4 rounded hover:bg-red-700"
+
+        <button 
+          onClick={() => handleClock("clockout")}
+          className="h-40 rounded-2xl bg-indigo-50 border-2 border-indigo-100 flex flex-col items-center justify-center gap-3 hover:bg-indigo-100 hover:scale-105 transition-all group"
         >
-          Clock Out
+          <span className="text-4xl group-hover:scale-110 transition-transform">🌙</span>
+          <span className="text-indigo-800 font-bold text-lg">Clock Out</span>
         </button>
       </div>
+
+      {status !== "idle" && (
+        <div className={`p-4 rounded-xl text-center border ${status === "success" ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"}`}>
+          {message}
+        </div>
+      )}
     </div>
   );
 }

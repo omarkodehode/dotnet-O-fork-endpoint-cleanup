@@ -372,3 +372,4 @@ C:\Users\Abode\Desktop\dotnet-O-fork-endpoint-cleanup\TimeTrackingApi\obj\Debug\
 C:\Users\Abode\Desktop\dotnet-O-fork-endpoint-cleanup\TimeTrackingApi\obj\Debug\net10.0\TimeTrackingApi.pdb
 C:\Users\Abode\Desktop\dotnet-O-fork-endpoint-cleanup\TimeTrackingApi\obj\Debug\net10.0\TimeTrackingApi.genruntimeconfig.cache
 C:\Users\Abode\Desktop\dotnet-O-fork-endpoint-cleanup\TimeTrackingApi\obj\Debug\net10.0\ref\TimeTrackingApi.dll
+C:\Users\Abode\Desktop\dotnet-O-fork-endpoint-cleanup\TimeTrackingApi\obj\Debug\net10.0\TimeTrackingApi.sourcelink.json

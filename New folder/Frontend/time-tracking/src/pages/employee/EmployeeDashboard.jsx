@@ -1,80 +1,46 @@
-import { useEffect, useState } from "react";
-import employeeApi from "../../api/employeeApi";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthProvider";
 
 export default function EmployeeDashboard() {
-  const [absences, setAbsences] = useState([]);
-  const [clockedIn, setClockedIn] = useState(false);
-  const [error, setError] = useState("");
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
-  const fetchAbsences = async () => {
-    try {
-      const res = await employeeApi.getOwnAbsences();
-      setAbsences(res);
-    } catch {
-      setError("Failed to load absences.");
-    }
-  };
-
-  useEffect(() => {
-    fetchAbsences();
-  }, []);
-
-  const handleClockInOut = async () => {
-    try {
-      if (clockedIn) await employeeApi.clockOut();
-      else await employeeApi.clockIn();
-      setClockedIn(!clockedIn);
-    } catch {
-      setError("Failed to update clock.");
-    }
-  };
-
-  const handleAddAbsence = async () => {
-    const reason = prompt("Enter absence reason:");
-    if (!reason) return;
-    try {
-      await employeeApi.createAbsence({ date: new Date(), reason });
-      fetchAbsences();
-    } catch {
-      setError("Failed to add absence.");
-    }
-  };
+  const ActionCard = ({ title, desc, icon, color, onClick }) => (
+    <button 
+      onClick={onClick}
+      className="flex flex-col items-center justify-center p-8 bg-white rounded-2xl shadow-sm border border-slate-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group w-full text-center h-64 relative overflow-hidden"
+    >
+      <div className={`absolute top-0 left-0 w-full h-2 ${color}`}></div>
+      <div className={`w-16 h-16 rounded-2xl ${color.replace('bg-', 'bg-opacity-10 text-')} flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform`}>
+        {icon}
+      </div>
+      <h3 className="text-xl font-bold text-slate-900">{title}</h3>
+      <p className="text-slate-500 mt-2 text-sm">{desc}</p>
+    </button>
+  );
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto">
-      <h1 className="text-3xl font-bold text-gray-800">My Dashboard</h1>
-
-      {error && <p className="text-red-600">{error}</p>}
-
-      <div className="flex gap-4">
-        <button
-          onClick={handleClockInOut}
-          className={`flex-1 py-2 rounded text-white font-semibold ${
-            clockedIn ? "bg-red-600 hover:bg-red-700" : "bg-green-600 hover:bg-green-700"
-          }`}
-        >
-          {clockedIn ? "Clock Out" : "Clock In"}
-        </button>
-        <button
-          onClick={handleAddAbsence}
-          className="flex-1 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold"
-        >
-          Add Absence
-        </button>
+    <div className="max-w-5xl mx-auto py-12 px-6">
+      <div className="text-center mb-16">
+        <h1 className="text-4xl font-bold text-slate-900 mb-4">Welcome back, {user?.username}!</h1>
+        <p className="text-lg text-slate-500">What would you like to handle today?</p>
       </div>
 
-      <div className="bg-white p-6 rounded shadow">
-        <h2 className="text-xl font-semibold mb-4">My Absences</h2>
-        <ul className="divide-y">
-          {absences.length > 0 ? absences.map(a => (
-            <li key={a.id} className="py-2 flex justify-between">
-              <span>{new Date(a.date).toLocaleDateString()}</span>
-              <span>{a.reason}</span>
-            </li>
-          )) : (
-            <li className="py-2 text-center text-gray-500">No absences recorded.</li>
-          )}
-        </ul>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 px-4">
+        <ActionCard 
+          title="Time Clock" 
+          desc="Clock in to start your shift or clock out to end it." 
+          icon="⏱" 
+          color="bg-indigo-600"
+          onClick={() => navigate("/employee/clock-in-out")}
+        />
+        <ActionCard 
+          title="Absences" 
+          desc="Request time off or view your leave history." 
+          icon="📅" 
+          color="bg-emerald-600"
+          onClick={() => navigate("/employee/absences")}
+        />
       </div>
     </div>
   );

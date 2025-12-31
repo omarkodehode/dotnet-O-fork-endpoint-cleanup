@@ -1,21 +1,23 @@
-import React, { useState } from "react";
+import { Outlet } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 
-export default function AdminLayout({ children }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
+export default function AdminLayout() {
   return (
-    <div className="flex h-screen bg-gray-100">
-      {/* Sidebar */}
-      <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />
+    <div className="min-h-screen bg-slate-50 font-sans">
+      {/* 1. Render Sidebar Fixed on Left */}
+      <Sidebar />
 
-      <div className="flex-1 flex flex-col">
-        {/* Navbar */}
-        <Navbar setSidebarOpen={setSidebarOpen} />
-
-        {/* Main content */}
-        <main className="p-6 flex-1 overflow-auto">{children}</main>
+      {/* 2. Main Content Area (pushed right by 64 tailwind units to clear sidebar) */}
+      <div className="ml-64 flex flex-col min-h-screen">
+        <Navbar />
+        
+        {/* 3. The Outlet is where the actual Page (Dashboard/Employees) appears */}
+        <main className="flex-1 p-8">
+          <div className="max-w-7xl mx-auto">
+            <Outlet />
+          </div>
+        </main>
       </div>
     </div>
   );
