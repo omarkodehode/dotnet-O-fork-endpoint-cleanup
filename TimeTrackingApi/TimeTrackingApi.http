@@ -1,0 +1,63 @@
+@base = http://localhost:5192
+@employeeId = 1
+@token = "eyJhbGciOiJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNobWFjLXNoYTI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiYWRtaW4iLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJhZG1pbiIsImV4cCI6MTc2NTQ5MjM2Mn0.269MGHR1TVUaQgvw21DYJ2GktxpaB7MJVNfbVoon-Jo"  # leave empty, will copy after login
+
+
+
+
+### Register user (admin)
+POST {{base}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin123",
+  "role": "admin"
+}
+
+### Login
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin123"
+}
+
+# Copy the "token" value from login response → set {{token}} variable
+
+### Create employee
+POST {{base}}/employees
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "username": "john",
+  "name": "John",
+  "role": "employee",
+  "department": "IT",
+  "password": "password123"
+  
+}
+
+### Clock in
+POST {{base}}/clockin/{{employeeId}}
+Authorization: Bearer {{token}}
+
+### Clock out
+POST {{base}}/clockout/{{employeeId}}
+Authorization: Bearer {{token}}
+
+### Add absence
+POST {{base}}/absence/{{employeeId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "date": "2025-11-28",
+  "reason": "Doctor appointment"
+}
+
+### Dashboard
+GET {{base}}/dashboard
+Authorization: Bearer {{token}}
