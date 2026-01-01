@@ -1,11 +1,27 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, Outlet } from "react-router-dom";
 
-export default function PrivateRoute({ children, role }) {
+export default function ProtectedRoute({ allowedRoles }) {
   const token = localStorage.getItem("token");
-  const userRole = localStorage.getItem("role");
+  
+  // FIX: Safely parse the user object
+  const userStr = localStorage.getItem("user");
+  let userRole = null;
+  
+  try {
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      userRole = user.role; 
+    }
+  } catch (e) {
+    console.error("Auth Error:", e);
+    localStorage.removeItem("user");
+  }
 
-  if (!token) return <Navigate to="/" />;
-  if (role && userRole !== role) return <Navigate to="/" />;
+  if (!token) return <Navigate to="/" replace />;
 
-  return children;
+  if (allowedRoles && !allowedRoles.includes(userRole)) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <Outlet />;
 }

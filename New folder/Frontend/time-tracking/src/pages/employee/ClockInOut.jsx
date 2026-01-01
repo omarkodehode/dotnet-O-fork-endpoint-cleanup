@@ -1,53 +1,86 @@
-import { useState } from "react";
-// ✅ FIXED: Import from 'apiClient', not 'api'
-import api from "../../api/apiClient"; 
+import { useState, useEffect } from "react";
+import api from "../../api/apiClient";
 
 export default function ClockInOut() {
-  const [status, setStatus] = useState("idle"); // idle, success, error
+  const [status, setStatus] = useState("Loading...");
+  const [lastTime, setLastTime] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  const handleClock = async (type) => {
+  // Check status on load
+  const fetchStatus = async () => {
     try {
-      // type will be "clockin" or "clockout"
-      await api.post(`/employee/${type}`);
-      setStatus("success");
-      setMessage(type === "clockin" ? "You are now clocked in." : "You have clocked out. Have a good evening!");
+      const res = await api.get("/employee/status");
+      setStatus(res.data.status); // "Clocked In" or "Clocked Out"
+      if (res.data.startTime) setLastTime(res.data.startTime);
     } catch (err) {
-      setStatus("error");
-      // Read specific error message from backend if available
-      const errMsg = err.response?.data?.message || err.response?.data || "Action failed.";
-      setMessage(errMsg);
+      console.error(err);
+      setStatus("Unknown");
     }
   };
 
+  useEffect(() => { fetchStatus(); }, []);
+
+  const handleClock = async (endpoint) => {
+    setLoading(true);
+    setMessage("");
+    try {
+      await api.post(`/employee/${endpoint}`);
+      await fetchStatus(); // Refresh status after action
+      setMessage(endpoint === "clockin" ? "Successfully Clocked In!" : "Successfully Clocked Out!");
+    } catch (err) {
+      const msg = err.response?.data?.message || "Action failed.";
+      setMessage(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const isClockedIn = status === "Clocked In";
+
   return (
-    <div className="max-w-xl mx-auto py-12 px-6">
-      <h1 className="text-3xl font-bold text-slate-900 mb-2 text-center">Time Clock</h1>
-      <p className="text-slate-500 text-center mb-10">Record your daily attendance.</p>
-
-      <div className="grid grid-cols-2 gap-6 mb-8">
-        <button 
-          onClick={() => handleClock("clockin")}
-          className="h-40 rounded-2xl bg-emerald-50 border-2 border-emerald-100 flex flex-col items-center justify-center gap-3 hover:bg-emerald-100 hover:scale-105 transition-all group"
-        >
-          <span className="text-4xl group-hover:scale-110 transition-transform">☀️</span>
-          <span className="text-emerald-800 font-bold text-lg">Clock In</span>
-        </button>
-
-        <button 
-          onClick={() => handleClock("clockout")}
-          className="h-40 rounded-2xl bg-indigo-50 border-2 border-indigo-100 flex flex-col items-center justify-center gap-3 hover:bg-indigo-100 hover:scale-105 transition-all group"
-        >
-          <span className="text-4xl group-hover:scale-110 transition-transform">🌙</span>
-          <span className="text-indigo-800 font-bold text-lg">Clock Out</span>
-        </button>
-      </div>
-
-      {status !== "idle" && (
-        <div className={`p-4 rounded-xl text-center border ${status === "success" ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"}`}>
-          {message}
+    <div className="flex flex-col items-center justify-center min-h-[60vh] p-6">
+      <div className="bg-white p-8 rounded-2xl shadow-xl max-w-sm w-full text-center border border-slate-100">
+        <h1 className="text-3xl font-bold text-slate-800 mb-2">Time Clock</h1>
+        
+        {/* Status Pill */}
+        <div className={`inline-block px-4 py-1 rounded-full text-sm font-bold mb-6 ${
+          isClockedIn ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-500"
+        }`}>
+          {status}
         </div>
-      )}
+
+        {/* Time Display */}
+        {isClockedIn && lastTime && (
+          <div className="mb-8">
+            <p className="text-xs text-slate-400 uppercase tracking-widest">Started At</p>
+            <p className="text-2xl font-mono text-slate-700">
+              {new Date(lastTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+            </p>
+          </div>
+        )}
+
+        {/* Action Button */}
+        {status !== "Loading..." && (
+          <button 
+            onClick={() => handleClock(isClockedIn ? "clockout" : "clockin")}
+            disabled={loading}
+            className={`w-full py-4 rounded-xl font-bold text-white text-lg shadow-lg transition-transform active:scale-95 ${
+              isClockedIn 
+                ? "bg-rose-500 hover:bg-rose-600 shadow-rose-200" 
+                : "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200"
+            }`}
+          >
+            {loading ? "Processing..." : (isClockedIn ? "Clock Out" : "Clock In")}
+          </button>
+        )}
+
+        {message && (
+          <p className="mt-4 text-sm font-medium text-slate-600 bg-slate-50 p-2 rounded">
+            {message}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

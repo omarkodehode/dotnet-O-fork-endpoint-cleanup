@@ -13,83 +13,59 @@ namespace TimeTrackingApi.Services
             _db = db;
         }
 
-        public async Task<TimeEntry?> ClockIn(int employeeId)
+        private async Task<Employee?> GetEmployeeByUserId(int userId)
         {
-            var employee = await _db.Employees.FirstOrDefaultAsync(e => e.UserId == employeeId);
-            if (employee == null)
-            {
-                employee = new Employee
-                {
-                    UserId = employeeId,
-                    FullName = string.Empty,
-                    Position = string.Empty,
-                    HireDate = DateTime.UtcNow
-                };
+            return await _db.Employees.FirstOrDefaultAsync(e => e.UserId == userId);
+        }
 
-                _db.Employees.Add(employee);
+        public async Task<TimeEntry?> ClockIn(int userId)
+        {
+            var emp = await GetEmployeeByUserId(userId);
+            if (emp == null)
+            {
+                emp = new Employee { UserId = userId, FullName = "Employee", Position = "Staff", HireDate = DateTime.UtcNow };
+                _db.Employees.Add(emp);
                 await _db.SaveChangesAsync();
             }
 
-            var active = await _db.TimeEntries
-                .FirstOrDefaultAsync(t => t.EmployeeId == employee.Id && t.ClockOut == null);
+            var active = await _db.TimeEntries.FirstOrDefaultAsync(t => t.EmployeeId == emp.Id && t.ClockOut == null);
+            if (active != null) return null;
 
-            if (active != null)
-                return null;
-
-            var entry = new TimeEntry
-            {
-                EmployeeId = employee.Id,
-                ClockIn = DateTime.UtcNow
-            };
-
+            var entry = new TimeEntry { EmployeeId = emp.Id, ClockIn = DateTime.UtcNow };
             _db.TimeEntries.Add(entry);
             await _db.SaveChangesAsync();
             return entry;
         }
 
-        public async Task<TimeEntry?> ClockOut(int employeeId)
+        public async Task<TimeEntry?> ClockOut(int userId)
         {
-            var employee = await _db.Employees.FirstOrDefaultAsync(e => e.UserId == employeeId);
-            if (employee == null)
-                return null;
+            var emp = await GetEmployeeByUserId(userId);
+            if (emp == null) return null;
 
-            var active = await _db.TimeEntries
-                .FirstOrDefaultAsync(t => t.EmployeeId == employee.Id && t.ClockOut == null);
-
-            if (active == null)
-                return null;
+            var active = await _db.TimeEntries.FirstOrDefaultAsync(t => t.EmployeeId == emp.Id && t.ClockOut == null);
+            if (active == null) return null;
 
             active.ClockOut = DateTime.UtcNow;
             await _db.SaveChangesAsync();
             return active;
         }
 
-        public async Task<List<TimeEntry>> GetActiveByUser(int userId)
+        public async Task<TimeEntry?> GetCurrentEntry(int userId)
         {
-            var employee = await _db.Employees.FirstOrDefaultAsync(e => e.UserId == userId);
-            if (employee == null)
-                return new List<TimeEntry>();
-
+            var emp = await GetEmployeeByUserId(userId);
+            if (emp == null) return null;
             return await _db.TimeEntries
-                .Where(t => t.EmployeeId == employee.Id && t.ClockOut == null)
-                .ToListAsync();
+                .Where(t => t.EmployeeId == emp.Id && t.ClockOut == null)
+                .OrderByDescending(t => t.ClockIn)
+                .FirstOrDefaultAsync();
         }
 
+        // Fix: This method is required by DashboardEndpoints
         public async Task<List<TimeEntry>> GetAllActive()
         {
             return await _db.TimeEntries
+                .Include(t => t.Employee)
                 .Where(t => t.ClockOut == null)
-                .ToListAsync();
-        }
-
-        public async Task<List<TimeEntry>> GetByUserId(int userId)
-        {
-            var employee = await _db.Employees.FirstOrDefaultAsync(e => e.UserId == userId);
-            if (employee == null) return new List<TimeEntry>();
-
-            return await _db.TimeEntries
-                .Where(t => t.EmployeeId == employee.Id)
-                .OrderByDescending(t => t.ClockIn)
                 .ToListAsync();
         }
     }

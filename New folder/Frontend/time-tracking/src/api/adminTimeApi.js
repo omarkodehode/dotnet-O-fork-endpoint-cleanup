@@ -1,8 +1,17 @@
-import apiClient from "./apiClient";
+import api from "./apiClient";
 
-const getActive = () => apiClient.get("/admin/time/active");
-const clockInForUser = (userId) => apiClient.post(`/admin/time/clockin/${userId}`);
-const clockOutForUser = (userId) => apiClient.post(`/admin/time/clockout/${userId}`);
-const getHistory = (userId) => apiClient.get(`/admin/time/history/${userId}`);
+const adminTimeApi = {
+  // Get list of currently clocked-in employees
+  getActiveShifts: () => api.get("/admin/time/active"),
 
-export default { getActive, clockInForUser, clockOutForUser, getHistory };
+  // Admin clocks in for a user
+  clockInUser: (userId) => api.post(`/admin/time/clockin/${userId}`),
+
+  // Admin clocks out for a user
+  clockOutUser: (userId) => api.post(`/admin/time/clockout/${userId}`),
+
+  // Get specific user's history
+  getUserHistory: (userId) => api.get(`/admin/time/history/${userId}`),
+};
+
+export default adminTimeApi;

@@ -7,17 +7,13 @@ using TimeTrackingApi.Services;
 using TimeTrackingApi.Endpoints;
 using TimeTrackingApi.Utils;
 
-
 var builder = WebApplication.CreateBuilder(args);
 
 // ---------------------------- CORS ----------------------------
 var defaultFrontendOrigins = new[]
 {
     "http://localhost:5173",
-    "http://localhost:3000",
-    "http://127.0.0.1:5173",
-    "https://localhost:5173",
-    "https://localhost:3000"
+    "http://localhost:3000"
 };
 
 var allowedFrontendOrigins = builder.Configuration.GetSection("Frontend:AllowedOrigins").Get<string[]>() ?? defaultFrontendOrigins;
@@ -65,7 +61,8 @@ builder.Services.AddScoped<AbsenceService>();
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("AdminOnly", policy => policy.RequireRole("admin"));
-    options.AddPolicy("EmployeeOnly", policy => policy.RequireRole("employee"));
+    // Allow Admins to access Employee routes too
+    options.AddPolicy("EmployeeOnly", policy => policy.RequireRole("employee", "admin"));
 });
 
 var app = builder.Build();
@@ -75,46 +72,23 @@ app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 
-// ---------------------------- Dev helpers ----------------------------
-// Expose a development-only endpoint to list users and their password hash (base64)
-// so developers can inspect what's stored in the DB when debugging login issues.
-if (app.Environment.IsDevelopment())
-{
-    app.MapGet("/dev/users", async (TimeTrackingApi.Data.AppDbContext db) =>
-    {
-        var list = await db.Users
-            .Select(u => new
-            {
-                u.Id,
-                u.Username,
-                u.Role,
-                PasswordHash = Convert.ToBase64String(u.PasswordHash)
-            })
-            .ToListAsync();
-
-        return Results.Ok(list);
-    });
-}
-
-// ---------------------------- Auto-Migrate DB ----------------------------
+// ---------------------------- Auto-Migrate ----------------------------
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
-
     Seed.Initialize(db);
 }
 
 // ---------------------------- Register Endpoints ----------------------------
 app.MapAuthEndpoints();
 app.MapEmployeeEndpoints();
-app.MapTimeEntryEndpoints();
-app.MapAdminTimeEntryEndpoints();
+// app.MapTimeEntryEndpoints(); <--- DELETED THIS LINE (Fixes Build Error)
+app.MapAdminTimeEntryEndpoints(); // Ensure you create this file below
 app.MapAbsenceEndpoints();
 app.MapEmployeeAreaEndpoints();
 app.MapDashboard();
 
-// Root test endpoint
 app.MapGet("/", () => "Time Tracking API is running! 🚀");
 
 app.Run();

@@ -2,107 +2,105 @@ import { useState, useEffect } from "react";
 import api from "../../api/apiClient";
 import { useNavigate } from "react-router-dom";
 
-export default function EmployeeAbsences() {
+export default function Absences() {
   const [absences, setAbsences] = useState([]);
   const [form, setForm] = useState({ date: "", reason: "" });
-  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
-
-  useEffect(() => { fetchAbsences(); }, []);
 
   const fetchAbsences = async () => {
     try {
       const res = await api.get("/employee/absences");
       setAbsences(res.data);
-    } catch(err) { console.error(err); }
+    } catch (err) {
+      console.error(err);
+      setError("Failed to load absences. Ensure you are logged in.");
+    }
   };
+
+  useEffect(() => { fetchAbsences(); }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setError("");
     try {
       await api.post("/employee/absences", form);
       setForm({ date: "", reason: "" });
-      fetchAbsences();
-    } catch(e) { alert("Failed to submit"); }
-    setLoading(false);
+      fetchAbsences(); 
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to create absence.");
+    }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8">
-      <div className="max-w-6xl mx-auto">
-        <button onClick={() => navigate("/employee/dashboard")} className="mb-6 text-sm font-medium text-slate-500 hover:text-indigo-600 flex items-center gap-1">
-          ← Back to Dashboard
+    <div className="p-6 max-w-4xl mx-auto">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-slate-800">My Absences</h1>
+        <button onClick={() => navigate("/employee/dashboard")} className="text-indigo-600 hover:underline">
+          ← Dashboard
         </button>
+      </div>
 
-        <div className="flex flex-col md:flex-row gap-8 items-start">
-          {/* Left: Request Form */}
-          <div className="w-full md:w-1/3">
-             <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 sticky top-8">
-              <h2 className="text-xl font-bold text-slate-900 mb-1">New Request</h2>
-              <p className="text-slate-500 text-sm mb-6">Submit a new absence for approval.</p>
-              
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Date</label>
-                  <input 
-                    type="date" 
-                    required
-                    value={form.date}
-                    onChange={e => setForm({...form, date: e.target.value})}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Reason</label>
-                  <textarea 
-                    required
-                    rows="3"
-                    value={form.reason}
-                    onChange={e => setForm({...form, reason: e.target.value})}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all resize-none"
-                    placeholder="E.g. Sick leave, Vacation..."
-                  ></textarea>
-                </div>
-                <button 
-                  disabled={loading}
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-indigo-600/20 active:scale-95 disabled:opacity-70"
-                >
-                  {loading ? "Submitting..." : "Submit Request"}
-                </button>
-              </form>
+      <div className="grid md:grid-cols-3 gap-6">
+        {/* Form */}
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 h-fit">
+          <h2 className="font-bold text-lg mb-4">Request Time Off</h2>
+          {error && <p className="text-red-600 text-sm mb-3 bg-red-50 p-2 rounded border border-red-100">{error}</p>}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm text-slate-600 mb-1">Date</label>
+              <input 
+                type="date" 
+                required 
+                className="w-full p-2 border rounded-lg"
+                value={form.date}
+                onChange={e => setForm({...form, date: e.target.value})}
+              />
             </div>
-          </div>
+            <div>
+              <label className="block text-sm text-slate-600 mb-1">Reason</label>
+              <input 
+                type="text" 
+                required 
+                placeholder="Sick leave..."
+                className="w-full p-2 border rounded-lg"
+                value={form.reason}
+                onChange={e => setForm({...form, reason: e.target.value})}
+              />
+            </div>
+            <button className="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 font-medium">
+              Submit
+            </button>
+          </form>
+        </div>
 
-          {/* Right: History List */}
-          <div className="w-full md:w-2/3">
-            <h2 className="text-xl font-bold text-slate-900 mb-4">Request History</h2>
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-              <ul className="divide-y divide-slate-100">
-                {absences.length === 0 && (
-                  <li className="p-8 text-center text-slate-400">No absence history found.</li>
-                )}
-                {absences.map((a) => (
-                  <li key={a.id} className="p-5 hover:bg-slate-50 transition-colors flex justify-between items-center group">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-lg group-hover:bg-indigo-100 group-hover:text-indigo-600 transition-colors">
-                        📅
-                      </div>
-                      <div>
-                        <p className="font-bold text-slate-900">
-                          {new Date(a.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
-                        </p>
-                        <p className="text-slate-500 text-sm mt-0.5">{a.reason}</p>
-                      </div>
-                    </div>
-                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-50 text-green-700 border border-green-100">
-                      Approved
+        {/* List */}
+        <div className="md:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <table className="w-full text-left">
+            <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
+              <tr>
+                <th className="p-4">Date</th>
+                <th className="p-4">Reason</th>
+                <th className="p-4">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {absences.length === 0 && (
+                <tr><td colSpan="3" className="p-4 text-center text-slate-400">No records found.</td></tr>
+              )}
+              {absences.map(a => (
+                <tr key={a.id} className="hover:bg-slate-50">
+                  <td className="p-4">{new Date(a.date).toLocaleDateString()}</td>
+                  <td className="p-4">{a.reason}</td>
+                  <td className="p-4">
+                    <span className={`text-xs px-2 py-1 rounded-full font-bold ${a.approved ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-800'}`}>
+                      {a.approved ? "Approved" : "Pending"}
                     </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

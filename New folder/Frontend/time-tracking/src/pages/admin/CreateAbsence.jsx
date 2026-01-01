@@ -7,70 +7,60 @@ export default function CreateAbsence() {
   const [form, setForm] = useState({ employeeId: "", date: "", reason: "" });
   const [error, setError] = useState("");
 
-  const handleChange = (e) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     try {
-      // Ensure EmployeeId is an integer
-      const payload = {
+      await absenceApi.createAbsence({
         ...form,
-        employeeId: parseInt(form.employeeId)
-      };
-      
-      await absenceApi.createAbsence(payload);
+        employeeId: parseInt(form.employeeId) // Ensure number
+      });
       navigate("/admin/absences");
     } catch (err) {
-      console.error(err);
-      setError("Failed to create absence. Verify the Employee ID exists.");
+      setError("Failed to create. Check Employee ID and ensure no duplicate dates.");
     }
   };
 
   return (
-    <div className="p-6 max-w-md mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Add Absence (Admin)</h1>
-      {error && <p className="text-red-600 mb-4">{error}</p>}
+    <div className="max-w-lg mx-auto bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+      <h1 className="text-2xl font-bold mb-6">Record Absence</h1>
+      {error && <p className="mb-4 text-red-600 bg-red-50 p-3 rounded text-sm">{error}</p>}
 
-      <form onSubmit={handleSubmit} className="bg-white p-6 rounded shadow space-y-4">
-        <input
-          type="number" 
-          name="employeeId"
-          placeholder="Employee ID"
-          value={form.employeeId}
-          onChange={handleChange}
-          className="w-full p-2 border rounded"
-          required
-        />
-        <input
-          type="date"
-          name="date"
-          value={form.date}
-          onChange={handleChange}
-          className="w-full p-2 border rounded"
-          required
-        />
-        <input
-          name="reason"
-          placeholder="Reason"
-          value={form.reason}
-          onChange={handleChange}
-          className="w-full p-2 border rounded"
-          required
-        />
-
-        <div className="flex gap-3">
-          <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-            Submit
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate("/admin/absences")}
-            className="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300"
-          >
-            Cancel
-          </button>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Employee ID</label>
+          <input
+            type="number"
+            required
+            className="w-full p-2 border rounded-lg"
+            placeholder="ID from Employee List"
+            value={form.employeeId}
+            onChange={(e) => setForm({ ...form, employeeId: e.target.value })}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Date</label>
+          <input
+            type="date"
+            required
+            className="w-full p-2 border rounded-lg"
+            value={form.date}
+            onChange={(e) => setForm({ ...form, date: e.target.value })}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Reason</label>
+          <input
+            required
+            className="w-full p-2 border rounded-lg"
+            placeholder="Reason for absence"
+            value={form.reason}
+            onChange={(e) => setForm({ ...form, reason: e.target.value })}
+          />
+        </div>
+        <div className="flex gap-3 mt-6">
+          <button className="flex-1 bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700">Save</button>
+          <button type="button" onClick={() => navigate("/admin/absences")} className="flex-1 bg-slate-100 text-slate-700 py-2 rounded-lg hover:bg-slate-200">Cancel</button>
         </div>
       </form>
     </div>

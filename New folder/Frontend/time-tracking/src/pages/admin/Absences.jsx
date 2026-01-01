@@ -10,8 +10,10 @@ export default function Absences() {
   const fetchAbsences = async () => {
     try {
       const res = await absenceApi.getAbsences();
-      setAbsences(res);
-    } catch {
+      // FIX: Access .data to get the actual array
+      setAbsences(res.data || []);
+    } catch (err) {
+      console.error(err);
       setError("Failed to load absences.");
     }
   };
@@ -24,7 +26,7 @@ export default function Absences() {
     if (!window.confirm("Are you sure you want to delete this absence?")) return;
     try {
       await absenceApi.deleteAbsence(id);
-      setAbsences(absences.filter(a => a.id !== id));
+      setAbsences(prev => prev.filter(a => a.id !== id));
     } catch {
       setError("Failed to delete absence.");
     }
@@ -42,7 +44,7 @@ export default function Absences() {
         </button>
       </div>
 
-      {error && <p className="text-red-600">{error}</p>}
+      {error && <p className="text-red-600 bg-red-50 p-2 rounded">{error}</p>}
 
       <div className="overflow-x-auto bg-white rounded shadow">
         <table className="min-w-full text-left">
@@ -54,10 +56,10 @@ export default function Absences() {
             </tr>
           </thead>
           <tbody>
-            {absences.length > 0 ? absences.map(a => (
+            {absences && absences.length > 0 ? absences.map(a => (
               <tr key={a.id} className="border-b hover:bg-gray-50">
                 <td className="px-4 py-2">{a.id}</td>
-                <td className="px-4 py-2">{a.employeeName}</td>
+                <td className="px-4 py-2">{a.employeeName || "Unknown"}</td>
                 <td className="px-4 py-2">{new Date(a.date).toLocaleDateString()}</td>
                 <td className="px-4 py-2">{a.reason}</td>
                 <td className="px-4 py-2 flex gap-2">

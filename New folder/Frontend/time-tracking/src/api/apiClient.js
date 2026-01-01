@@ -1,16 +1,20 @@
 import axios from "axios";
 
-const apiClient = axios.create({
-  baseURL: "http://localhost:5192",
-  headers: { "Content-Type": "application/json" },
+const api = axios.create({
+  // FIX: Explicitly set to 5192 to match launchSettings.json
+  baseURL: "http://localhost:5192", 
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
-// Automatically attach JWT token to every request
-apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
-  config.headers = config.headers || {};
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
+// Add a response interceptor to handle errors globally
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    console.error("API Call Failed:", error.response || error.message);
+    return Promise.reject(error);
+  }
+);
 
-export default apiClient;
+export default api;

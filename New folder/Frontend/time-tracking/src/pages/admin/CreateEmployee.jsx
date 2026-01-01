@@ -1,7 +1,7 @@
 // CreateEmployee.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import employeeApi from "../../api/employeeApi"; // no AdminLayout here
+import employeeApi from "../../api/employeeApi"; 
 
 export default function CreateEmployee() {
   const navigate = useNavigate();
@@ -21,7 +21,8 @@ export default function CreateEmployee() {
     e.preventDefault();
     setError("");
     try {
-      await employeeApi.createEmployee(form);
+      // FIX: Changed from createEmployee to create
+      await employeeApi.create(form);
       navigate("/admin/employees");
     } catch (err) {
       setError("Failed to create employee.");

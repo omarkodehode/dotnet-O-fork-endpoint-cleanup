@@ -1,47 +1,30 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import AdminLayout from "../../components/AdminLayout";
 import employeeApi from "../../api/employeeApi";
 
 export default function EditEmployee() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [form, setForm] = useState({
-    name: "",
-    username: "",
-    password: "",
-    department: "",
-    role: "employee",
-  });
+  const [form, setForm] = useState({ fullName: "", position: "" });
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const fetchEmployee = async () => {
-      try {
-        const res = await employeeApi.getEmployee(id);
+    // Load existing data
+    employeeApi.getById(id)
+      .then(res => {
         setForm({
-          name: res.data.name,
-          username: res.data.username || "",
-          password: "",
-          department: res.data.department || "",
-          role: res.data.role || "employee",
+          fullName: res.data.fullName || "",
+          position: res.data.position || ""
         });
-      } catch (err) {
-        console.error(err);
-        setError("Failed to load employee.");
-      }
-    };
-    fetchEmployee();
+      })
+      .catch(() => setError("Failed to load employee data."));
   }, [id]);
-
-  const handleChange = (e) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
     try {
-      await employeeApi.updateEmployee(id, form);
+      // Send PUT request
+      await employeeApi.update(id, form);
       navigate("/admin/employees");
     } catch (err) {
       console.error(err);
@@ -50,63 +33,35 @@ export default function EditEmployee() {
   };
 
   return (
-    <AdminLayout>
-      <h1 className="text-2xl font-bold mb-4">Edit Employee</h1>
-      {error && <p className="text-red-600 mb-4">{error}</p>}
-      <form onSubmit={handleSubmit} className="bg-white p-6 rounded shadow space-y-4">
-        <input
-          name="name"
-          placeholder="Name"
-          value={form.name}
-          onChange={handleChange}
-          className="w-full p-2 border rounded"
-          required
-        />
-        <input
-          name="username"
-          placeholder="Username"
-          value={form.username}
-          onChange={handleChange}
-          className="w-full p-2 border rounded"
-          required
-        />
-        <input
-          name="password"
-          type="password"
-          placeholder="Password (leave blank to keep)"
-          value={form.password}
-          onChange={handleChange}
-          className="w-full p-2 border rounded"
-        />
-        <input
-          name="department"
-          placeholder="Department"
-          value={form.department}
-          onChange={handleChange}
-          className="w-full p-2 border rounded"
-        />
-        <select
-          name="role"
-          value={form.role}
-          onChange={handleChange}
-          className="w-full p-2 border rounded"
-        >
-          <option value="employee">Employee</option>
-          <option value="admin">Admin</option>
-        </select>
-        <div className="flex gap-3">
-          <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-            Save
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate("/admin/employees")}
-            className="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300"
-          >
-            Cancel
-          </button>
+    <div className="max-w-lg mx-auto bg-white p-8 rounded-xl shadow-sm border border-slate-200 mt-10">
+      <h1 className="text-2xl font-bold mb-6">Edit Employee</h1>
+      {error && <p className="mb-4 text-red-600 bg-red-50 p-2 rounded">{error}</p>}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-slate-700">Full Name</label>
+          <input
+            type="text"
+            className="w-full p-2 border rounded"
+            value={form.fullName}
+            onChange={e => setForm({...form, fullName: e.target.value})}
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700">Position</label>
+          <input
+            type="text"
+            className="w-full p-2 border rounded"
+            value={form.position}
+            onChange={e => setForm({...form, position: e.target.value})}
+          />
+        </div>
+        <div className="flex gap-4 mt-6">
+          <button className="flex-1 bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700">Save Changes</button>
+          <button type="button" onClick={() => navigate("/admin/employees")} className="flex-1 bg-gray-100 text-gray-700 py-2 rounded hover:bg-gray-200">Cancel</button>
         </div>
       </form>
-    </AdminLayout>
+    </div>
   );
 }

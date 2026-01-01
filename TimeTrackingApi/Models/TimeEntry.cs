@@ -7,6 +7,7 @@ namespace TimeTrackingApi.Models
         public int EmployeeId { get; set; }
         public Employee? Employee { get; set; }
 
+        // The system expects these exact names:
         public DateTime ClockIn { get; set; }
         public DateTime? ClockOut { get; set; }
 

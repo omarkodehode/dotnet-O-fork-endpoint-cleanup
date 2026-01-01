@@ -14,21 +14,23 @@ export const AuthProvider = ({ children }) => {
     
     if (token && storedUser) {
       setUser(JSON.parse(storedUser));
-      // Set default header for future requests
       api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
     }
     setLoading(false);
   }, []);
 
   const login = async (username, password) => {
-    // Call your backend login endpoint
     const res = await api.post("/auth/login", { username, password });
     
-    // Extract data (adjust this based on your actual API response structure)
-    // Assuming backend returns: { token: "...", role: "...", id: 1 }
-    const { token, role, id } = res.data; 
+    // FIX: Match the C# backend response structure: { token, user: { id, username, role } }
+    const { token, user: apiUser } = res.data; 
     
-    const userData = { username, role, id };
+    // Create a clean user object
+    const userData = { 
+        id: apiUser.id,
+        username: apiUser.username, 
+        role: apiUser.role 
+    };
     
     // Save to storage
     localStorage.setItem("token", token);

@@ -34,35 +34,52 @@ namespace TimeTrackingApi.Services
             return await _db.Absences.FindAsync(id);
         }
 
-        // Main Create method: Takes userId + Absence object
+        // METHOD 1: Employee Create (With Auto-Create Logic)
         public async Task<Absence?> Create(int userId, Absence abs)
         {
-            // 1. Find the Employee associated with this User
+            // 1. Find or Auto-Create Employee
             var emp = await _db.Employees.FirstOrDefaultAsync(e => e.UserId == userId);
-            if (emp == null) return null; // User is not an employee
+            if (emp == null)
+            {
+                emp = new Employee 
+                { 
+                    UserId = userId, 
+                    FullName = "Employee", // Default name
+                    Position = "Staff", 
+                    HireDate = DateTime.UtcNow 
+                };
+                _db.Employees.Add(emp);
+                await _db.SaveChangesAsync();
+            }
 
-            // 2. Ensure Date is UTC
             abs.Date = DateTime.SpecifyKind(abs.Date, DateTimeKind.Utc);
 
-            // 3. CHECK FOR DUPLICATE
+            // 2. Check Duplicate
             var exists = await _db.Absences
                 .AnyAsync(a => a.EmployeeId == emp.Id && a.Date.Date == abs.Date.Date);
             
-            if (exists) 
-                return null; // Return null to indicate duplicate
+            if (exists) return null;
 
-            // 4. Assign the correct EmployeeId
+            // 3. Save
             abs.EmployeeId = emp.Id;
-
             _db.Absences.Add(abs);
             await _db.SaveChangesAsync();
             return abs;
         }
 
-        // Overload for Admin usage (if needed)
-        public async Task<Absence> Create(Absence abs)
+        // METHOD 2: Admin Create
+        public async Task<Absence?> Create(Absence abs)
         {
-             abs.Date = DateTime.SpecifyKind(abs.Date, DateTimeKind.Utc);
+            var empExists = await _db.Employees.AnyAsync(e => e.Id == abs.EmployeeId);
+            if (!empExists) return null;
+
+            abs.Date = DateTime.SpecifyKind(abs.Date, DateTimeKind.Utc);
+
+            var exists = await _db.Absences
+                .AnyAsync(a => a.EmployeeId == abs.EmployeeId && a.Date.Date == abs.Date.Date);
+            
+            if (exists) return null;
+
             _db.Absences.Add(abs);
             await _db.SaveChangesAsync();
             return abs;

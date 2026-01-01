@@ -1,24 +1,29 @@
-import apiClient from "./apiClient";
+import api from "./apiClient";
 
-// Admin: Get all absences
-const getAbsences = () => apiClient.get("/absences");
+const absenceApi = {
+  // ============ ADMIN METHODS ============
+  // Maps to: GET /absences
+  getAbsences: () => api.get("/absences"), 
+  
+  // Maps to: POST /absences
+  createAbsence: (data) => api.post("/absences", data),
+  
+  // Maps to: DELETE /absences/{id}
+  deleteAbsence: (id) => api.delete(`/absences/${id}`),
 
-// Admin: Get single absence by ID
-const getAbsence = (id) => apiClient.get(`/absences/${id}`);
+  // Maps to: GET /absences/{id}
+  getAbsence: (id) => api.get(`/absences/${id}`),
 
-// Admin: Create absence
-const createAbsence = (data) => apiClient.post("/absences", data);
+  // Maps to: PUT /absences/{id}
+  updateAbsence: (id, data) => api.put(`/absences/${id}`, data),
 
-// Admin: Update absence
-const updateAbsence = (id, data) => apiClient.put(`/absences/${id}`, data);
 
-// Admin: Delete absence
-const deleteAbsence = (id) => apiClient.delete(`/absences/${id}`);
-
-export default {
-  getAbsences,
-  getAbsence,
-  createAbsence,
-  updateAbsence,
-  deleteAbsence,
+  // ============ EMPLOYEE METHODS ============
+  // Maps to: GET /absences/my
+  getMyAbsences: () => api.get("/absences/my"), 
+  
+  // Maps to: POST /absences/my
+  requestAbsence: (data) => api.post("/absences/my", data), 
 };
+
+export default absenceApi;
