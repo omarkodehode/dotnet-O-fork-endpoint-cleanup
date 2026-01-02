@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims; // Needed to read User ID from token
 using TimeTrackingApi.DTOs.Auth;
-using TimeTrackingApi.Models;
 using TimeTrackingApi.Services;
 
 namespace TimeTrackingApi.Endpoints
@@ -9,64 +9,31 @@ namespace TimeTrackingApi.Endpoints
     {
         public static void MapAuthEndpoints(this IEndpointRouteBuilder app)
         {
-            // -------------------- Login --------------------
-            app.MapPost("/auth/login", async (
-                [FromBody] LoginRequest dto,
-                AuthService auth,
-                JwtService jwt) =>
+            var group = app.MapGroup("/auth");
+
+            group.MapPost("/login", async ([FromBody] LoginRequest req, AuthService auth) =>
             {
-                var user = await auth.Authenticate(dto.Username, dto.Password);
-                if (user == null)
-                    return Results.BadRequest(new { message = "Invalid credentials." });
-
-                var token = jwt.GenerateToken(user.Id, user.Username, user.Role);
-                var userDto = new TimeTrackingApi.DTOs.UserDto
-                {
-                    Id = user.Id,
-                    Username = user.Username,
-                    Role = user.Role
-                };
-
-                return Results.Ok(new { token, user = userDto });
+                var response = await auth.Authenticate(req.Username, req.Password);
+                return response is not null ? Results.Ok(response) : Results.Unauthorized();
             });
 
-            // -------------------- Register --------------------
-            app.MapPost("/auth/register", async (
-                [FromBody] RegisterRequest dto,
-                AuthService auth) =>
+            // ✅ NEW: User Change Password
+            group.MapPost("/change-password", async ([FromBody] ChangePasswordDto dto, AuthService auth, ClaimsPrincipal user) =>
             {
-                var user = await auth.Register(dto.Username, dto.Password, dto.Role);
-                if (user == null)
-                    return Results.BadRequest(new { message = "Username already exists." });
+                // Get User ID safely from the token
+                var userIdStr = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdStr)) return Results.Unauthorized();
+                
+                var success = await auth.ChangePassword(int.Parse(userIdStr), dto.CurrentPassword, dto.NewPassword);
+                return success ? Results.Ok(new { message = "Password updated" }) : Results.BadRequest("Invalid current password");
+            }).RequireAuthorization(); // Any logged in user can access
 
-                var userDto = new TimeTrackingApi.DTOs.UserDto
-                {
-                    Id = user.Id,
-                    Username = user.Username,
-                    Role = user.Role
-                };
-
-                return Results.Ok(new { message = "User registered successfully.", user = userDto });
-            });
-
-            // -------------------- Get Current User --------------------
-            app.MapGet("/auth/me", async (
-                [FromServices] AuthService auth,
-                HttpContext http) =>
+            // ✅ NEW: Admin Reset Password
+            group.MapPost("/reset-password", async ([FromBody] ResetPasswordDto dto, AuthService auth) =>
             {
-                var user = await auth.GetCurrentUser(http);
-                if (user == null)
-                    return Results.Unauthorized();
-
-                var userDto = new TimeTrackingApi.DTOs.UserDto
-                {
-                    Id = user.Id,
-                    Username = user.Username,
-                    Role = user.Role
-                };
-
-                return Results.Ok(userDto);
-            }).RequireAuthorization();
+                var success = await auth.ResetPassword(dto.UserId, dto.NewPassword);
+                return success ? Results.Ok(new { message = "Password reset successfully" }) : Results.NotFound("User not found");
+            }).RequireAuthorization("AdminOnly"); // Only Admin can access
         }
     }
 }

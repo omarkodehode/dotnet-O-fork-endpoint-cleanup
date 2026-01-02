@@ -1,37 +1,48 @@
-using Microsoft.AspNetCore.Http;
-using System.Security.Claims;
-using TimeTrackingApi.Data;
-using TimeTrackingApi.Models;
 using Microsoft.EntityFrameworkCore;
+using TimeTrackingApi.Data;
+using TimeTrackingApi.DTOs;        // ✅ Needed for UserDto
+using TimeTrackingApi.DTOs.Auth;   // ✅ Needed for LoginResponse
+using TimeTrackingApi.Models;
+using TimeTrackingApi.Utils;
 
 namespace TimeTrackingApi.Services
 {
     public class AuthService
     {
         private readonly AppDbContext _db;
+        private readonly JwtService _jwt;
 
-        public AuthService(AppDbContext db)
+        public AuthService(AppDbContext db, JwtService jwt)
         {
             _db = db;
+            _jwt = jwt;
         }
 
-        public async Task<User?> Authenticate(string username, string password)
+        public async Task<LoginResponse?> Authenticate(string username, string password)
         {
             var user = await _db.Users.FirstOrDefaultAsync(u => u.Username == username);
-
-            if (user == null)
+            if (user == null || !PasswordHasher.Verify(password, user.PasswordHash))
                 return null;
 
-            if (!PasswordHasher.Verify(password, user.PasswordHash))
-                return null;
+            // ✅ FIX 1: Pass all 3 arguments (Id, Username, Role)
+            var token = _jwt.GenerateToken(user.Id, user.Username, user.Role);
 
-            return user;
+            // ✅ FIX 2: Use Object Initialization (fixes Constructor error)
+            return new LoginResponse
+            {
+                Token = token,
+                User = new UserDto
+                {
+                    Id = user.Id,
+                    Username = user.Username,
+                    Role = user.Role
+                }
+            };
         }
 
         public async Task<User?> Register(string username, string password, string role)
         {
-            var exists = await _db.Users.AnyAsync(u => u.Username == username);
-            if (exists)
+            if (await _db.Users.AnyAsync(u => u.Username == username))
                 return null;
 
             var user = new User
@@ -43,23 +54,30 @@ namespace TimeTrackingApi.Services
 
             _db.Users.Add(user);
             await _db.SaveChangesAsync();
-
-
-
-
             return user;
         }
 
-        public async Task<User?> GetCurrentUser(HttpContext http)
+        public async Task<bool> ChangePassword(int userId, string currentPassword, string newPassword)
         {
-            var idClaim = http.User.FindFirst("id")?.Value;
-            if (string.IsNullOrEmpty(idClaim))
-                return null;
+            var user = await _db.Users.FindAsync(userId);
+            if (user == null) return false;
 
-            if (!int.TryParse(idClaim, out var id))
-                return null;
+            if (!PasswordHasher.Verify(currentPassword, user.PasswordHash))
+                return false; 
 
-            return await _db.Users.FirstOrDefaultAsync(u => u.Id == id);
+            user.PasswordHash = PasswordHasher.Hash(newPassword);
+            await _db.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> ResetPassword(int userId, string newPassword)
+        {
+            var user = await _db.Users.FindAsync(userId);
+            if (user == null) return false;
+
+            user.PasswordHash = PasswordHasher.Hash(newPassword);
+            await _db.SaveChangesAsync();
+            return true;
         }
     }
 }

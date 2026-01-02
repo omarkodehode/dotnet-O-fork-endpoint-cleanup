@@ -27,12 +27,26 @@ namespace TimeTrackingApi.Endpoints
                 return Results.Ok(dtos);
             });
 
+            // ✅ NEW: GET SINGLE (Fixes loading data for Edit Page)
+            adminGroup.MapGet("/{id}", async (int id, AbsenceService service) =>
+            {
+                var abs = await service.GetById(id);
+                return abs is not null ? Results.Ok(abs) : Results.NotFound();
+            });
+
             // CREATE (Admin)
             adminGroup.MapPost("/", async ([FromBody] Absence abs, AbsenceService service) =>
             {
                 var created = await service.Create(abs);
                 if(created == null) return Results.Conflict("Invalid Employee or Duplicate.");
                 return Results.Created($"/absences/{created.Id}", created);
+            });
+
+            // ✅ NEW: UPDATE (Fixes the 405 Error)
+            adminGroup.MapPut("/{id}", async (int id, [FromBody] Absence abs, AbsenceService service) =>
+            {
+                var updated = await service.Update(id, abs);
+                return updated is not null ? Results.Ok(updated) : Results.NotFound();
             });
 
             // DELETE

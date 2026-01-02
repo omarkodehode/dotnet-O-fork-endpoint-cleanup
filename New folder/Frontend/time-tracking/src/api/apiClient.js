@@ -1,20 +1,19 @@
 import axios from "axios";
 
 const api = axios.create({
-  // FIX: Explicitly set to 5192 to match launchSettings.json
-  baseURL: "http://localhost:5192", 
+  baseURL: "http://localhost:5192", // Make sure this matches your backend port!
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// Add a response interceptor to handle errors globally
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    console.error("API Call Failed:", error.response || error.message);
-    return Promise.reject(error);
+// Automatically add the token to every request if it exists
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
-);
+  return config;
+});
 
 export default api;

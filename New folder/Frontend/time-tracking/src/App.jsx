@@ -6,10 +6,13 @@ import MainLayout from "./components/MainLayout";
 // Admin Pages
 import Dashboard from "./pages/admin/Dashboard";
 import Employees from "./pages/admin/Employees";
-import EditEmployee from "./pages/admin/EditEmployee"; // ✅ Added Import
+import CreateEmployee from "./pages/admin/CreateEmployee"; 
+import EditEmployee from "./pages/admin/EditEmployee"; 
 import Absences from "./pages/admin/Absences";
-import CreateAbsence from "./pages/admin/CreateAbsence"; // ✅ Added Import
-import EditAbsence from "./pages/admin/EditAbsence";     // ✅ Added Import
+import CreateAbsence from "./pages/admin/CreateAbsence"; 
+import EditAbsence from "./pages/admin/EditAbsence";     
+import Logs from "./pages/admin/Logs"; 
+import ChangePassword from "./pages/ChangePassword"; 
 
 // Employee Pages
 import EmployeeDashboard from "./pages/employee/EmployeeDashboard";
@@ -39,15 +42,28 @@ export default function App() {
           
           {/* Employees Management */}
           <Route path="/admin/employees" element={<Employees />} />
-          <Route path="/admin/employees/edit/:id" element={<EditEmployee />} /> {/* ✅ Added Route */}
+          <Route path="/admin/employees/new" element={<CreateEmployee />} />
+          <Route path="/admin/employees/edit/:id" element={<EditEmployee />} />
 
           {/* Absences Management */}
           <Route path="/admin/absences" element={<Absences />} />
-          <Route path="/admin/absences/create" element={<CreateAbsence />} />   {/* ✅ Added Route */}
-          <Route path="/admin/absences/edit/:id" element={<EditAbsence />} />   {/* ✅ Added Route */}
+          <Route path="/admin/absences/create" element={<CreateAbsence />} />
+          <Route path="/admin/absences/edit/:id" element={<EditAbsence />} />
+
+          {/* System Logs */}
+          <Route path="/admin/logs" element={<Logs />} />
         </Route>
       </Route>
 
+      {/* ---------------- SHARED ROUTES ---------------- */}
+      {/* Both Admin & Employee can access these */}
+      <Route element={<ProtectedRoute allowedRoles={["admin", "employee"]} />}>
+        <Route element={<MainLayout />}>
+           <Route path="/change-password" element={<ChangePassword />} />
+        </Route>
+      </Route>
+
+      {/* Catch All */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

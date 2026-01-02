@@ -13,7 +13,7 @@ export default function CreateAbsence() {
     try {
       await absenceApi.createAbsence({
         ...form,
-        employeeId: parseInt(form.employeeId) // Ensure number
+        employeeId: parseInt(form.employeeId)
       });
       navigate("/admin/absences");
     } catch (err) {
@@ -28,8 +28,10 @@ export default function CreateAbsence() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Employee ID</label>
+          <label htmlFor="employeeId" className="block text-sm font-medium text-slate-700 mb-1">Employee ID</label>
           <input
+            id="employeeId"
+            name="employeeId"
             type="number"
             required
             className="w-full p-2 border rounded-lg"
@@ -39,8 +41,10 @@ export default function CreateAbsence() {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Date</label>
+          <label htmlFor="date" className="block text-sm font-medium text-slate-700 mb-1">Date</label>
           <input
+            id="date"
+            name="date"
             type="date"
             required
             className="w-full p-2 border rounded-lg"
@@ -49,8 +53,11 @@ export default function CreateAbsence() {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Reason</label>
+          <label htmlFor="reason" className="block text-sm font-medium text-slate-700 mb-1">Reason</label>
           <input
+            id="reason"
+            name="reason"
+            type="text"
             required
             className="w-full p-2 border rounded-lg"
             placeholder="Reason for absence"
@@ -59,7 +66,7 @@ export default function CreateAbsence() {
           />
         </div>
         <div className="flex gap-3 mt-6">
-          <button className="flex-1 bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700">Save</button>
+          <button type="submit" className="flex-1 bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700">Save</button>
           <button type="button" onClick={() => navigate("/admin/absences")} className="flex-1 bg-slate-100 text-slate-700 py-2 rounded-lg hover:bg-slate-200">Cancel</button>
         </div>
       </form>

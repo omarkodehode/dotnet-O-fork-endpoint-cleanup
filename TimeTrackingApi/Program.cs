@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims; 
 using System.Text;
 using TimeTrackingApi.Data;
 using TimeTrackingApi.Services;
@@ -9,13 +10,8 @@ using TimeTrackingApi.Utils;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ---------------------------- CORS ----------------------------
-var defaultFrontendOrigins = new[]
-{
-    "http://localhost:5173",
-    "http://localhost:3000"
-};
-
+// --- CORS ---
+var defaultFrontendOrigins = new[] { "http://localhost:5173", "http://localhost:3000" };
 var allowedFrontendOrigins = builder.Configuration.GetSection("Frontend:AllowedOrigins").Get<string[]>() ?? defaultFrontendOrigins;
 
 builder.Services.AddCors(options =>
@@ -29,11 +25,11 @@ builder.Services.AddCors(options =>
     });
 });
 
-// ---------------------------- DB ----------------------------
+// --- Database ---
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// ---------------------------- JWT ----------------------------
+// --- JWT Authentication ---
 var jwtKey = builder.Configuration["Jwt:Key"] ?? "default_dev_key_12345";
 builder.Services.AddSingleton(new JwtService(jwtKey));
 
@@ -48,31 +44,34 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+            
+            // Map Role correctly
+            RoleClaimType = ClaimTypes.Role,
+            NameClaimType = ClaimTypes.Name
         };
     });
 
-// ---------------------------- Services ----------------------------
+// --- Services ---
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<EmployeeService>();
 builder.Services.AddScoped<TimeEntryService>();
 builder.Services.AddScoped<AbsenceService>();
 
-// ---------------------------- Authorization ----------------------------
+// --- Authorization ---
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("AdminOnly", policy => policy.RequireRole("admin"));
-    // Allow Admins to access Employee routes too
-    options.AddPolicy("EmployeeOnly", policy => policy.RequireRole("employee", "admin"));
+    options.AddPolicy("AdminOnly", policy => policy.RequireRole("admin", "Admin"));
+    options.AddPolicy("EmployeeOnly", policy => policy.RequireRole("employee", "Employee", "admin", "Admin"));
 });
 
 var app = builder.Build();
 
-// ---------------------------- Middleware ----------------------------
+// --- Middleware ---
 app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 
-// ---------------------------- Auto-Migrate ----------------------------
+// --- DB Seed ---
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -80,14 +79,14 @@ using (var scope = app.Services.CreateScope())
     Seed.Initialize(db);
 }
 
-// ---------------------------- Register Endpoints ----------------------------
+// --- Endpoints ---
 app.MapAuthEndpoints();
 app.MapEmployeeEndpoints();
-// app.MapTimeEntryEndpoints(); <--- DELETED THIS LINE (Fixes Build Error)
-app.MapAdminTimeEntryEndpoints(); // Ensure you create this file below
+app.MapAdminTimeEntryEndpoints(); 
 app.MapAbsenceEndpoints();
 app.MapEmployeeAreaEndpoints();
 app.MapDashboard();
+app.MapLogEndpoints(); // ✅ NEW: Adds the /logs route
 
 app.MapGet("/", () => "Time Tracking API is running! 🚀");
 

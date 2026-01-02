@@ -1,6 +1,16 @@
-import apiClient from "./apiClient";
+import api from "./apiClient";
 
-const login = (data) => apiClient.post("/auth/login", data);
-const register = (data) => apiClient.post("/auth/register", data);
+export const login = async (username, password) => {
+  const response = await api.post("/auth/login", { username, password });
+  return response.data;
+};
 
-export default { login, register };
+// ✅ NEW
+export const changePassword = async (data) => {
+  return await api.post("/auth/change-password", data);
+};
+
+// ✅ NEW
+export const resetPassword = async (data) => {
+  return await api.post("/auth/reset-password", data);
+};

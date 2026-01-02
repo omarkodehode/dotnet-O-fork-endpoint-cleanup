@@ -15,13 +15,9 @@ export default function Login() {
     setLoading(true);
 
     try {
-      // 1. Perform Login
       await login(form.username, form.password);
-      
-      // 2. Check Role directly from storage
       const user = JSON.parse(localStorage.getItem("user"));
       
-      // 3. Redirect based on Role
       if (user?.role === "employee") {
         navigate("/employee/dashboard");
       } else {
@@ -37,7 +33,6 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 relative overflow-hidden">
-      {/* Background Decorative Blobs */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-200 rounded-full blur-[100px] opacity-40 animate-pulse"></div>
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-200 rounded-full blur-[100px] opacity-40 animate-pulse delay-700"></div>
@@ -45,7 +40,6 @@ export default function Login() {
 
       <div className="w-full max-w-md bg-white/80 backdrop-blur-xl rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white p-8 relative z-10 mx-4">
         
-        {/* Logo / Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 text-white font-bold text-xl mb-4 shadow-lg shadow-indigo-500/30">
             T
@@ -54,7 +48,6 @@ export default function Login() {
           <p className="text-slate-500 text-sm mt-1">Sign in to your TimeTrack account</p>
         </div>
 
-        {/* Error Message */}
         {error && (
           <div className="mb-6 p-3 bg-red-50 border border-red-100 rounded-lg flex items-center gap-3 text-red-600 text-sm animate-fade-in">
             <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -66,7 +59,7 @@ export default function Login() {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">
+            <label htmlFor="username" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">
               Username
             </label>
             <div className="relative group">
@@ -78,8 +71,11 @@ export default function Login() {
                 </span>
               </div>
               <input 
+                id="username"
+                name="username"
                 required
                 autoFocus
+                autoComplete="username"
                 className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all duration-200"
                 placeholder="Enter your username"
                 value={form.username} 
@@ -89,7 +85,7 @@ export default function Login() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">
+            <label htmlFor="password" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">
               Password
             </label>
             <div className="relative group">
@@ -101,8 +97,11 @@ export default function Login() {
                 </span>
               </div>
               <input 
+                id="password"
+                name="password"
                 required
-                type="password" 
+                type="password"
+                autoComplete="current-password"
                 className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all duration-200"
                 placeholder="••••••••"
                 value={form.password} 
@@ -112,6 +111,7 @@ export default function Login() {
           </div>
 
           <button 
+            type="submit"
             disabled={loading}
             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3.5 rounded-xl shadow-lg shadow-indigo-600/20 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed mt-2"
           >
