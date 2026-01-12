@@ -23,9 +23,7 @@ namespace TimeTrackingApi.Endpoints
                 return emp is not null ? Results.Ok(emp) : Results.NotFound();
             });
 
-            // ✅ FIXED POST ENDPOINT
-            // 1. Removes the trailing slash ("/") to prevent 405 errors
-            // 2. Uses CreateEmployeeDto to handle Username/Password
+            //  Uses CreateEmployeeDto to handle Username/Password
             group.MapPost("", async ([FromBody] CreateEmployeeDto dto, EmployeeService empService, AuthService authService) =>
             {
                 // Validate

@@ -4,13 +4,14 @@ import { useAuth } from "../context/AuthProvider";
 export default function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useAuth(); // Ensure useAuth provides 'user' object
+  const { user, logout } = useAuth();
 
   const handleLogout = () => {
     logout();
     navigate("/");
   };
 
+  // Helper component for consistent links
   const NavItem = ({ to, icon, label }) => {
     const isActive = location.pathname.startsWith(to);
     return (
@@ -60,7 +61,9 @@ export default function Sidebar() {
             <NavItem to="/admin/dashboard" icon="📊" label="Overview" />
             <NavItem to="/admin/employees" icon="👥" label="Employees" />
             <NavItem to="/admin/absences" icon="📅" label="All Absences" />
-            {/* <NavItem to="/admin/time-entries" icon="⌚" label="Time Sheets" /> */}
+            
+            {/* ✅ Added Departments Link Correctly */}
+            <NavItem to="/admin/departments" icon="🏢" label="Departments" />
           </div>
         )}
       </nav>

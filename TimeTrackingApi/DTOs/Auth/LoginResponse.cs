@@ -6,7 +6,6 @@ namespace TimeTrackingApi.DTOs.Auth
     {
         public string Token { get; set; } = string.Empty;
         
-        // ✅ FIX: Added User property to match Frontend expectation
         public UserDto User { get; set; } 
     }
 }

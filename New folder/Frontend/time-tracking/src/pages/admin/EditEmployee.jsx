@@ -13,8 +13,8 @@ export default function EditEmployee() {
     employeeApi.getById(id)
       .then(res => {
         setForm({
-          fullName: res.data.fullName || "",
-          position: res.data.position || ""
+          fullName: res.fullName || "",
+          position: res.position || ""
         });
       })
       .catch(() => setError("Failed to load employee data."));

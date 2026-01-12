@@ -34,8 +34,8 @@ namespace TimeTrackingApi.Services
 
             existing.FullName = input.FullName;
             existing.Position = input.Position;
-            // We usually don't update UserId or HireDate here unless necessary
             
+                        
             await _db.SaveChangesAsync();
             return existing;
         }

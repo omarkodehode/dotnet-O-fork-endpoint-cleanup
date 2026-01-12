@@ -56,6 +56,7 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<EmployeeService>();
 builder.Services.AddScoped<TimeEntryService>();
 builder.Services.AddScoped<AbsenceService>();
+builder.Services.AddScoped<DepartmentService>();
 
 // --- Authorization ---
 builder.Services.AddAuthorization(options =>
@@ -86,7 +87,8 @@ app.MapAdminTimeEntryEndpoints();
 app.MapAbsenceEndpoints();
 app.MapEmployeeAreaEndpoints();
 app.MapDashboard();
-app.MapLogEndpoints(); // ✅ NEW: Adds the /logs route
+app.MapLogEndpoints(); 
+app.MapDepartmentEndpoints();
 
 app.MapGet("/", () => "Time Tracking API is running! 🚀");
 

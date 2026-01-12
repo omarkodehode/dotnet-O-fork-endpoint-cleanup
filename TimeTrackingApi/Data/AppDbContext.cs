@@ -14,6 +14,8 @@ namespace TimeTrackingApi.Data
         public DbSet<TimeEntry> TimeEntries { get; set; } = null!;
         public DbSet<Absence> Absences { get; set; } = null!;
 
+        public DbSet<Department> Departments {get;set;} = null!;
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

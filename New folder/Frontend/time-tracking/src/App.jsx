@@ -13,6 +13,7 @@ import CreateAbsence from "./pages/admin/CreateAbsence";
 import EditAbsence from "./pages/admin/EditAbsence";     
 import Logs from "./pages/admin/Logs"; 
 import ChangePassword from "./pages/ChangePassword"; 
+import Departments from "./pages/admin/Departments";
 
 // Employee Pages
 import EmployeeDashboard from "./pages/employee/EmployeeDashboard";
@@ -39,6 +40,7 @@ export default function App() {
           {/* Dashboard */}
           <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="/admin/dashboard" element={<Dashboard />} />
+          <Route path="/admin/departments" element={<Departments />} />
           
           {/* Employees Management */}
           <Route path="/admin/employees" element={<Employees />} />

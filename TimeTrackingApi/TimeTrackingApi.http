@@ -10,8 +10,8 @@ POST {{base}}/auth/register
 Content-Type: application/json
 
 {
-  "username": "admin",
-  "password": "admin123",
+  "username": "master",
+  "password": "master",
   "role": "admin"
 }
 
@@ -61,3 +61,27 @@ Content-Type: application/json
 ### Dashboard
 GET {{base}}/dashboard
 Authorization: Bearer {{token}}
+
+### Change own password
+POST {{base}}/auth/change-password
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "currentPassword": "oldPass",
+  "newPassword": "newPass"
+}
+
+### Admin reset password (requires Admin role)
+POST {{base}}/auth/reset-password
+Authorization: Bearer {{token}}  # use an admin token
+Content-Type: application/json
+
+{
+  "userId": {{employeeId}},
+  "newPassword": "newPassForUser"
+}
+
+### Notes
+- After a successful login, copy the returned `token` value and set the `{{token}}` variable above.
+- Use the admin account (role: "admin") to call `/auth/reset-password`.
