@@ -8,37 +8,67 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing token on load
+    // 1. Check for existing token on load
     const token = localStorage.getItem("token");
     const storedUser = localStorage.getItem("user");
     
     if (token && storedUser) {
-      setUser(JSON.parse(storedUser));
-      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        
+        // SAFETY: Force role to lowercase even from storage
+        if (parsedUser.role) {
+            parsedUser.role = parsedUser.role.toLowerCase();
+        }
+
+        setUser(parsedUser);
+        api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+        console.log("✅ Auth Loaded from Storage:", parsedUser);
+      } catch (err) {
+        console.error("❌ Corrupt user data in storage, clearing...", err);
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+      }
     }
     setLoading(false);
   }, []);
 
   const login = async (username, password) => {
-    const res = await api.post("/auth/login", { username, password });
-    
-    // FIX: Match the C# backend response structure: { token, user: { id, username, role } }
-    const { token, user: apiUser } = res.data; 
-    
-    // Create a clean user object
-    const userData = { 
-        id: apiUser.id,
-        username: apiUser.username, 
-        role: apiUser.role 
-    };
-    
-    // Save to storage
-    localStorage.setItem("token", token);
-    localStorage.setItem("user", JSON.stringify(userData));
-    
-    // Set axios header
-    api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-    setUser(userData);
+    console.log("⏳ Attempting Login...");
+    try {
+        const res = await api.post("/auth/login", { username, password });
+        
+        // FIX: Match the C# backend response structure
+        // Backend returns properties in camelCase: { token: "...", user: { ... } }
+        const { token, user: apiUser } = res.data; 
+        
+        if (!apiUser) throw new Error("No user data in response");
+
+        // ✅ CRITICAL FIX: Normalize role to lowercase ("Admin" -> "admin")
+        // This ensures the Sidebar checks (=== "admin") always pass.
+        const cleanRole = apiUser.role ? apiUser.role.toLowerCase() : "guest";
+
+        const userData = { 
+            id: apiUser.id,
+            username: apiUser.username, 
+            role: cleanRole 
+        };
+        
+        console.log("✅ Login Success. Role is:", cleanRole);
+
+        // Save to storage
+        localStorage.setItem("token", token);
+        localStorage.setItem("user", JSON.stringify(userData));
+        
+        // Set axios header for future requests
+        api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+        setUser(userData);
+        
+        return userData; // Return for the Login page to use if needed
+    } catch (error) {
+        console.error("❌ Login Failed:", error);
+        throw error;
+    }
   };
 
   const logout = () => {
@@ -46,6 +76,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("user");
     delete api.defaults.headers.common["Authorization"];
     setUser(null);
+    console.log("🔒 Logged Out");
   };
 
   return (

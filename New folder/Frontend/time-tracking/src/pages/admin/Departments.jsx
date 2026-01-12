@@ -28,7 +28,7 @@ export default function Departments() {
       await createDepartment(newDept);
       setNewDept({ name: "", description: "" });
       setShowForm(false);
-      loadDepartments(); // Refresh list
+      loadDepartments(); // Refresh list to show the new one
     } catch (err) {
       setError("Failed to create department. Name might already exist.");
     }

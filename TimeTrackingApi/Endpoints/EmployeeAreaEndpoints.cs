@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims; // ✅ REQUIRED: Add this namespace
 using TimeTrackingApi.Models;
 using TimeTrackingApi.Services;
 
@@ -16,7 +17,11 @@ namespace TimeTrackingApi.Endpoints
             // GET STATUS
             group.MapGet("/status", async (HttpContext ctx, TimeEntryService service) =>
             {
-                var userId = int.Parse(ctx.User.FindFirst("id")!.Value);
+                // FIX: Use ClaimTypes.NameIdentifier instead of "id"
+                var userIdStr = ctx.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdStr)) return Results.Unauthorized();
+
+                var userId = int.Parse(userIdStr);
                 var entry = await service.GetCurrentEntry(userId);
                 
                 return Results.Ok(new { 
@@ -28,7 +33,11 @@ namespace TimeTrackingApi.Endpoints
             // CLOCK IN
             group.MapPost("/clockin", async (HttpContext ctx, TimeEntryService service) =>
             {
-                var userId = int.Parse(ctx.User.FindFirst("id")!.Value);
+                // FIX: Use ClaimTypes.NameIdentifier
+                var userIdStr = ctx.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdStr)) return Results.Unauthorized();
+
+                var userId = int.Parse(userIdStr);
                 var result = await service.ClockIn(userId);
 
                 if (result == null) return Results.Conflict(new { message = "Already clocked in." });
@@ -38,7 +47,11 @@ namespace TimeTrackingApi.Endpoints
             // CLOCK OUT
             group.MapPost("/clockout", async (HttpContext ctx, TimeEntryService service) =>
             {
-                var userId = int.Parse(ctx.User.FindFirst("id")!.Value);
+                // FIX: Use ClaimTypes.NameIdentifier
+                var userIdStr = ctx.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdStr)) return Results.Unauthorized();
+
+                var userId = int.Parse(userIdStr);
                 var result = await service.ClockOut(userId);
 
                 if (result == null) return Results.Conflict(new { message = "Not clocked in." });
@@ -47,13 +60,16 @@ namespace TimeTrackingApi.Endpoints
 
             // ---------------- ABSENCES ----------------
 
-            // GET My Absences (FIXED 500 ERROR)
+            // GET My Absences
             group.MapGet("/absences", async (HttpContext ctx, AbsenceService service) =>
             {
-                var userId = int.Parse(ctx.User.FindFirst("id")!.Value);
+                // FIX: Use ClaimTypes.NameIdentifier
+                var userIdStr = ctx.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdStr)) return Results.Unauthorized();
+
+                var userId = int.Parse(userIdStr);
                 var list = await service.GetByEmployee(userId);
                 
-                // MAP TO DTO TO STOP CIRCULAR REFERENCE CRASH
                 var dtos = list.Select(a => new 
                 {
                     a.Id,
@@ -68,7 +84,11 @@ namespace TimeTrackingApi.Endpoints
             // POST Request Absence
             group.MapPost("/absences", async (HttpContext ctx, [FromBody] Absence abs, AbsenceService service) =>
             {
-                var userId = int.Parse(ctx.User.FindFirst("id")!.Value);
+                // FIX: Use ClaimTypes.NameIdentifier
+                var userIdStr = ctx.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdStr)) return Results.Unauthorized();
+
+                var userId = int.Parse(userIdStr);
                 var created = await service.Create(userId, abs);
 
                 if (created == null) return Results.Conflict(new { message = "Duplicate request or date taken." });

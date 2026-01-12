@@ -4,11 +4,11 @@ const adminTimeApi = {
   // Get list of currently clocked-in employees
   getActiveShifts: () => api.get("/admin/time/active"),
 
-  // Admin clocks in for a user
-  clockInUser: (userId) => api.post(`/admin/time/clockin/${userId}`),
+  // ✅ FIX: Use employeeId to match the new Backend endpoint
+  clockInUser: (employeeId) => api.post(`/admin/time/clockin/${employeeId}`),
 
-  // Admin clocks out for a user
-  clockOutUser: (userId) => api.post(`/admin/time/clockout/${userId}`),
+  // ✅ FIX: Use employeeId
+  clockOutUser: (employeeId) => api.post(`/admin/time/clockout/${employeeId}`),
 
   // Get specific user's history
   getUserHistory: (userId) => api.get(`/admin/time/history/${userId}`),

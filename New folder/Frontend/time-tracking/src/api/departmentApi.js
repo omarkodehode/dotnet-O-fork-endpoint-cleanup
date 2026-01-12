@@ -1,9 +1,11 @@
 import api from "./apiClient";
+
 export const getDepartments = async () => {
   const response = await api.get("/departments");
   return response.data;
 };
 
+// Function to call the create endpoint
 export const createDepartment = async (data) => {
   const response = await api.post("/departments", data);
   return response.data;

@@ -15,7 +15,9 @@ export default function MainLayout() {
     { label: "Dashboard", path: "/admin/dashboard", icon: "📊" },
     { label: "Employees", path: "/admin/employees", icon: "👥" },
     { label: "Absences", path: "/admin/absences", icon: "📅" },
-    { label: "System Logs", path: "/admin/logs", icon: "📜" }, // ✅ Only for Admin
+    { label: "System Logs", path: "/admin/logs", icon: "📜" },
+    { label: "Department", path: "/admin/departments", icon: "🏢" },
+     // ✅ Only for Admin
   ];
 
   const employeeLinks = [

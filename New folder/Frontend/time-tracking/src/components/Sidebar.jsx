@@ -6,6 +6,9 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
+  // ✅ FIX: Normalize role to lowercase to handle "Admin" vs "admin" mismatch
+  const userRole = user?.role?.toLowerCase();
+
   const handleLogout = () => {
     logout();
     navigate("/");
@@ -13,7 +16,10 @@ export default function Sidebar() {
 
   // Helper component for consistent links
   const NavItem = ({ to, icon, label }) => {
-    const isActive = location.pathname.startsWith(to);
+    // Logic: Exact match for dashboard, StartsWith for others (to keep sub-pages active)
+    const isActive = location.pathname === to || 
+      (location.pathname.startsWith(to) && to !== "/admin/dashboard" && to !== "/employee/dashboard");
+    
     return (
       <Link
         to={to}
@@ -45,7 +51,7 @@ export default function Sidebar() {
       <nav className="flex-1 px-4 py-4 space-y-6 overflow-y-auto">
         
         {/* EMPLOYEES MENU */}
-        {user?.role === "employee" && (
+        {userRole === "employee" && (
           <div>
             <div className="px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">My Workspace</div>
             <NavItem to="/employee/dashboard" icon="📊" label="Dashboard" />
@@ -55,14 +61,13 @@ export default function Sidebar() {
         )}
 
         {/* ADMIN MENU */}
-        {user?.role === "admin" && (
+        {userRole === "admin" &&  (
           <div>
             <div className="px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Admin Panel</div>
             <NavItem to="/admin/dashboard" icon="📊" label="Overview" />
-            <NavItem to="/admin/employees" icon="👥" label="Employees" />
+            <NavItem to="/admin/departments" icon="👥" label="Employees" />
+
             <NavItem to="/admin/absences" icon="📅" label="All Absences" />
-            
-            {/* ✅ Added Departments Link Correctly */}
             <NavItem to="/admin/departments" icon="🏢" label="Departments" />
           </div>
         )}

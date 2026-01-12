@@ -7,6 +7,7 @@ using TimeTrackingApi.Data;
 using TimeTrackingApi.Services;
 using TimeTrackingApi.Endpoints;
 using TimeTrackingApi.Utils;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,6 +30,10 @@ builder.Services.AddCors(options =>
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options =>
+{
+    options.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+});
 // --- JWT Authentication ---
 var jwtKey = builder.Configuration["Jwt:Key"] ?? "default_dev_key_12345";
 builder.Services.AddSingleton(new JwtService(jwtKey));
