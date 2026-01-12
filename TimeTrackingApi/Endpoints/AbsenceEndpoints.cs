@@ -16,18 +16,24 @@ namespace TimeTrackingApi.Endpoints
             adminGroup.MapGet("/", async (AbsenceService service) =>
             {
                 var list = await service.GetAll();
+                
+                // FIX: Map to new fields (StartDate, EndDate, Type)
                 var dtos = list.Select(a => new 
                 {
                     a.Id,
                     a.EmployeeId,
                     EmployeeName = a.Employee?.FullName ?? "Unknown",
-                    a.Date,
-                    a.Reason
+                    // OLD: a.Date, a.Reason
+                    StartDate = a.StartDate,
+                    EndDate = a.EndDate,
+                    Type = a.Type.ToString(),
+                    Description = a.Description,
+                    a.Approved
                 });
                 return Results.Ok(dtos);
             });
 
-            // ✅ NEW: GET SINGLE (Fixes loading data for Edit Page)
+            // GET SINGLE
             adminGroup.MapGet("/{id}", async (int id, AbsenceService service) =>
             {
                 var abs = await service.GetById(id);
@@ -42,7 +48,7 @@ namespace TimeTrackingApi.Endpoints
                 return Results.Created($"/absences/{created.Id}", created);
             });
 
-            // ✅ NEW: UPDATE (Fixes the 405 Error)
+            // UPDATE
             adminGroup.MapPut("/{id}", async (int id, [FromBody] Absence abs, AbsenceService service) =>
             {
                 var updated = await service.Update(id, abs);

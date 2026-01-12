@@ -1,4 +1,4 @@
-using TimeTrackingApi.DTOs; // ✅ Ensure this using exists
+using TimeTrackingApi.DTOs; 
 
 namespace TimeTrackingApi.DTOs.Auth
 {
@@ -6,6 +6,6 @@ namespace TimeTrackingApi.DTOs.Auth
     {
         public string Token { get; set; } = string.Empty;
         
-        public UserDto User { get; set; } 
+        public UserDto? User { get; set; } 
     }
 }

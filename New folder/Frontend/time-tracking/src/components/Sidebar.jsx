@@ -6,7 +6,6 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  // ✅ FIX: Normalize role to lowercase to handle "Admin" vs "admin" mismatch
   const userRole = user?.role?.toLowerCase();
 
   const handleLogout = () => {
@@ -14,9 +13,7 @@ export default function Sidebar() {
     navigate("/");
   };
 
-  // Helper component for consistent links
   const NavItem = ({ to, icon, label }) => {
-    // Logic: Exact match for dashboard, StartsWith for others (to keep sub-pages active)
     const isActive = location.pathname === to || 
       (location.pathname.startsWith(to) && to !== "/admin/dashboard" && to !== "/employee/dashboard");
     

@@ -37,8 +37,8 @@ namespace TimeTrackingApi.Endpoints
                         Id = a.Id,
                         Type = "Absence",
                         Employee = a.Employee != null ? a.Employee.FullName : "Unknown",
-                        Date = a.Date,
-                        Details = $"Reason: {a.Reason}"
+                       Date = a.StartDate,
+                       Details = $"{a.Type}: {a.StartDate:MM/dd} - {a.EndDate:MM/dd}"
                     }).ToListAsync();
 
                 // 3. Merge and Sort

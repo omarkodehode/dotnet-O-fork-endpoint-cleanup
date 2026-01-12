@@ -17,8 +17,8 @@ namespace TimeTrackingApi.Endpoints
                 var activeEntries = await timeService.GetAllActive();
                 var activeCount = activeEntries.Select(t => t.EmployeeId).Distinct().Count();
 
-                var absencesToday = (await absService.GetAll()).Count(a => a.Date.Date == DateTime.UtcNow.Date);
-
+                // var absencesToday = (await absService.GetAll()).Count(a => a.Date.Date == DateTime.UtcNow.Date);
+var absencesToday = await absService.GetAbsenceCountForDate(DateTime.UtcNow);
                 var dto = new DashboardDto
                 {
                     TotalEmployees = totalEmployees,

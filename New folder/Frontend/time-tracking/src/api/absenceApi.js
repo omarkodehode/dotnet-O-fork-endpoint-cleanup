@@ -20,10 +20,10 @@ const absenceApi = {
 
   // ============ EMPLOYEE METHODS ============
   // Maps to: GET /absences/my
-  getMyAbsences: () => api.get("/absences/my"), 
+  getMyAbsences: () => api.get("/absences/"), 
   
   // Maps to: POST /absences/my
-  requestAbsence: (data) => api.post("/absences/my", data), 
+  requestAbsence: (data) => api.post("/absences/", data), 
 };
 
 export default absenceApi;

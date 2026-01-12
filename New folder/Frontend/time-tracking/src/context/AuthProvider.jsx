@@ -38,13 +38,10 @@ export const AuthProvider = ({ children }) => {
     try {
         const res = await api.post("/auth/login", { username, password });
         
-        // FIX: Match the C# backend response structure
-        // Backend returns properties in camelCase: { token: "...", user: { ... } }
         const { token, user: apiUser } = res.data; 
         
         if (!apiUser) throw new Error("No user data in response");
 
-        // ✅ CRITICAL FIX: Normalize role to lowercase ("Admin" -> "admin")
         // This ensures the Sidebar checks (=== "admin") always pass.
         const cleanRole = apiUser.role ? apiUser.role.toLowerCase() : "guest";
 

@@ -6,7 +6,6 @@ export default function MainLayout() {
   const location = useLocation();
 
   // 1. Retrieve the user/role from storage (or Context)
-  // Ensure your Login page saves this structure to localStorage
   const user = JSON.parse(localStorage.getItem("user")) || {};
   const role = user.role; 
 

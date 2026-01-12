@@ -25,14 +25,24 @@ builder.Services.AddCors(options =>
               .AllowCredentials();
     });
 });
-
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // This converter allows strings to be parsed as Enums
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 // --- Database ---
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// ✅ REPLACE THIS ENTIRE BLOCK
 builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options =>
 {
+    // Fix circular references
     options.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+    
+    // ✅ FIX: Add this line to allow Strings ("Vacation") -> Enum conversion in Minimal APIs
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
 });
 // --- JWT Authentication ---
 var jwtKey = builder.Configuration["Jwt:Key"] ?? "default_dev_key_12345";
@@ -67,7 +77,8 @@ builder.Services.AddScoped<DepartmentService>();
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("AdminOnly", policy => policy.RequireRole("admin", "Admin"));
-    options.AddPolicy("EmployeeOnly", policy => policy.RequireRole("employee", "Employee", "admin", "Admin"));
+options.AddPolicy("EmployeeOnly", policy => policy.RequireRole("employee", "Employee", "admin", "Admin", "Manager","manager"));
+options.AddPolicy("ManagerOnly", policy => policy.RequireRole("Manager", "Admin", "admin","manager"));
 });
 
 var app = builder.Build();
@@ -94,6 +105,7 @@ app.MapEmployeeAreaEndpoints();
 app.MapDashboard();
 app.MapLogEndpoints(); 
 app.MapDepartmentEndpoints();
+app.MapManagerEndpoints();
 
 app.MapGet("/", () => "Time Tracking API is running! 🚀");
 

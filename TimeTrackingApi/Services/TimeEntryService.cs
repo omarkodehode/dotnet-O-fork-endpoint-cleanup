@@ -63,8 +63,47 @@ namespace TimeTrackingApi.Services
                 .OrderByDescending(t => t.ClockIn)
                 .FirstOrDefaultAsync();
         }
+        public async Task<bool> UpdateEntry(int userId, int entryId, DateTime newClockIn, DateTime? newClockOut)
+{
+    var emp = await GetEmployeeByUserId(userId);
+    if (emp == null) return false;
 
-        // Fix: This method is required by DashboardEndpoints
+    var entry = await _db.TimeEntries
+        .FirstOrDefaultAsync(t => t.Id == entryId && t.EmployeeId == emp.Id);
+
+    if (entry == null) return false; 
+    
+    
+    var now = DateTime.UtcNow;
+    
+   
+    int diff = (7 + (now.DayOfWeek - DayOfWeek.Monday)) % 7;
+    var startOfCurrentWeek = now.Date.AddDays(-diff); 
+
+    if (entry.ClockIn.Date < startOfCurrentWeek)
+    {
+        throw new InvalidOperationException("Cannot edit entries from previous weeks.");
+    }
+
+    entry.ClockIn = newClockIn;
+    entry.ClockOut = newClockOut;
+
+    await _db.SaveChangesAsync();
+    return true;
+}
+public async Task<List<TimeEntry>> GetHistory(int userId)
+{
+    var emp = await GetEmployeeByUserId(userId);
+    if (emp == null) return new List<TimeEntry>();
+
+    return await _db.TimeEntries
+        .Where(t => t.EmployeeId == emp.Id && t.ClockIn > DateTime.UtcNow.AddDays(-30))
+        .OrderByDescending(t => t.ClockIn)
+        .ToListAsync();
+}
+
+
+
         public async Task<List<TimeEntry>> GetAllActive()
         {
             return await _db.TimeEntries

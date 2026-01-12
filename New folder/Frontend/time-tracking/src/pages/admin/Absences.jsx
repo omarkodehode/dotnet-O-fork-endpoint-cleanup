@@ -10,7 +10,6 @@ export default function Absences() {
   const fetchAbsences = async () => {
     try {
       const res = await absenceApi.getAbsences();
-      // FIX: Access .data to get the actual array
       setAbsences(res.data || []);
     } catch (err) {
       console.error(err);
@@ -32,6 +31,12 @@ export default function Absences() {
     }
   };
 
+  // Helper to format dates cleanly
+  const formatDate = (dateString) => {
+    if (!dateString || dateString.startsWith("0001")) return "N/A";
+    return new Date(dateString).toLocaleDateString();
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -50,28 +55,56 @@ export default function Absences() {
         <table className="min-w-full text-left">
           <thead className="bg-gray-100">
             <tr>
-              {["ID", "Employee", "Date", "Reason", "Actions"].map((h) => (
-                <th key={h} className="px-4 py-2 border">{h}</th>
+              {/* Updated Headers to match data structure */}
+              {["ID", "Employee", "Start Date", "End Date", "Type", "Approved", "Actions"].map((h) => (
+                <th key={h} className="px-4 py-2 border font-semibold text-gray-700">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {absences && absences.length > 0 ? absences.map(a => (
-              <tr key={a.id} className="border-b hover:bg-gray-50">
+              <tr key={a.id} className="border-b hover:bg-gray-50 transition">
                 <td className="px-4 py-2">{a.id}</td>
-                <td className="px-4 py-2">{a.employeeName || "Unknown"}</td>
-                <td className="px-4 py-2">{new Date(a.date).toLocaleDateString()}</td>
-                <td className="px-4 py-2">{a.reason}</td>
+                
+                {/* Check your backend response for this field! 
+                   It might be `a.employee?.firstName` or just `a.employeeName` 
+                */}
+                <td className="px-4 py-2 font-medium">
+                  {a.employeeName || (a.employee ? `${a.employee.firstName} ${a.employee.lastName}` : "Unknown")}
+                </td>
+
+                {/* ✅ Fixed: Changed a.date to a.startDate */}
+                <td className="px-4 py-2">{formatDate(a.startDate)}</td>
+                
+                {/* Added End Date column */}
+                <td className="px-4 py-2">{formatDate(a.endDate)}</td>
+
+                {/* ✅ Fixed: Changed a.reason to a.type */}
+                <td className="px-4 py-2">
+                  <span className="px-2 py-1 bg-gray-100 rounded text-sm">
+                    {a.type || "Other"}
+                  </span>
+                </td>
+
+                {/* Added Approval Status */}
+                <td className="px-4 py-2">
+                  {a.approved ? (
+                    <span className="text-green-600 font-bold text-sm bg-green-100 px-2 py-1 rounded">Yes</span>
+                  ) : (
+                    <span className="text-yellow-600 font-bold text-sm bg-yellow-100 px-2 py-1 rounded">Pending</span>
+                  )}
+                </td>
+
                 <td className="px-4 py-2 flex gap-2">
                   <button
                     onClick={() => navigate(`/admin/absences/edit/${a.id}`)}
-                    className="bg-yellow-500 text-white px-2 py-1 rounded hover:bg-yellow-600"
+                    className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 text-sm"
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => handleDelete(a.id)}
-                    className="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700"
+                    className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 text-sm"
                   >
                     Delete
                   </button>
@@ -79,7 +112,9 @@ export default function Absences() {
               </tr>
             )) : (
               <tr>
-                <td colSpan="5" className="px-4 py-4 text-center text-gray-500">No absences found.</td>
+                <td colSpan="7" className="px-4 py-8 text-center text-gray-500">
+                  No absences found.
+                </td>
               </tr>
             )}
           </tbody>

@@ -3,7 +3,6 @@ import { Navigate, Outlet } from "react-router-dom";
 export default function ProtectedRoute({ allowedRoles }) {
   const token = localStorage.getItem("token");
   
-  // FIX: Safely parse the user object
   const userStr = localStorage.getItem("user");
   let userRole = null;
   

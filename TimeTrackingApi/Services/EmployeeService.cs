@@ -16,6 +16,21 @@ namespace TimeTrackingApi.Services
                 .Include(e => e.User)
                 .ToListAsync();
         }
+        public async Task<Employee?> GetByUserId(int userId)
+        {
+            return await _db.Employees
+                .Include(e => e.Department)
+                .FirstOrDefaultAsync(e => e.UserId == userId);
+        }
+
+        public async Task<List<Employee>> GetByManager(int managerId)
+        {
+            return await _db.Employees
+                .Where(e => e.ManagerId == managerId)
+                .Include(e => e.User)
+                .Include(e => e.Department)
+                .ToListAsync();
+        }
 
         public async Task<Employee?> GetById(int id)
         {
@@ -27,12 +42,9 @@ namespace TimeTrackingApi.Services
 
         public async Task<Employee?> Create(Employee emp)
         {
-            // VIKTIG: Hindrer at EF prøver å opprette User/Department på nytt
-            // ved å kun bruke ID-ene for koblingen.
             emp.User = null;
             emp.Department = null;
             emp.Manager = null;
-
             _db.Employees.Add(emp);
             await _db.SaveChangesAsync();
             return emp;
