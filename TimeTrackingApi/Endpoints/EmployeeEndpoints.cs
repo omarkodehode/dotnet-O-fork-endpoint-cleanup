@@ -52,7 +52,7 @@ namespace TimeTrackingApi.Endpoints
 
                 await empService.Create(newEmployee);
                 
-                return Results.Created($"/employees/{newEmployee.Id}", newEmployee);
+                return Results.Created($"/employees/{newEmployee.Id}", NewEmployee.MapFrom(newEmployee));
             });
 
             // PUT
@@ -67,6 +67,21 @@ namespace TimeTrackingApi.Endpoints
             {
                 return await service.Delete(id) ? Results.Ok() : Results.NotFound();
             });
+        }
+    }
+
+    // DTO for creating an employee 
+    public record NewEmployee(int Id, int UserId, string FullName, string Position, DateTime HireDate)
+    {
+        public static NewEmployee MapFrom(Employee employee)
+        {
+            return new NewEmployee(
+                employee.Id,
+                employee.UserId ?? 0, 
+                employee.FullName, 
+                employee.Position, 
+                employee.HireDate
+            );
         }
     }
 }
