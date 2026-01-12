@@ -1,105 +1,51 @@
-using Microsoft.EntityFrameworkCore;
-using TimeTrackingApi.Data;
-using TimeTrackingApi.Models;
+using Microsoft.AspNetCore.Authorization;
+using TimeTrackingApi.Services;
+using System.Linq;
 
-namespace TimeTrackingApi.Services
+namespace TimeTrackingApi.Endpoints
 {
-    public class TimeEntryService
+    public static class AdminTimeEntryEndpoints
     {
-        private readonly AppDbContext _db;
-
-        public TimeEntryService(AppDbContext db)
+        public static void MapAdminTimeEntryEndpoints(this IEndpointRouteBuilder app)
         {
-            _db = db;
-        }
+            var group = app.MapGroup("/admin/time").RequireAuthorization("AdminOnly");
 
-        // --- Methods for "My Page" (User acting on themselves via UserId) ---
-
-        private async Task<Employee?> GetEmployeeByUserId(int userId)
-        {
-            return await _db.Employees.FirstOrDefaultAsync(e => e.UserId == userId);
-        }
-
-        public async Task<TimeEntry?> ClockIn(int userId)
-        {
-            var emp = await GetEmployeeByUserId(userId);
-            // Fallback: If employee profile missing, create one (Optional, maybe risky)
-            if (emp == null)
+            // GET ALL ACTIVE (Fixes Dashboard Error)
+            group.MapGet("/active", async (TimeEntryService service) =>
             {
-                emp = new Employee { UserId = userId, FullName = "Employee", Position = "Staff", HireDate = DateTime.UtcNow };
-                _db.Employees.Add(emp);
-                await _db.SaveChangesAsync();
-            }
+                var active = await service.GetAllActive();
 
-            var active = await _db.TimeEntries.FirstOrDefaultAsync(t => t.EmployeeId == emp.Id && t.ClockOut == null);
-            if (active != null) return null; // Already clocked in
+                var result = active.Select(t => new
+                {
+                    Id = t.Id,
+                    EmployeeId = t.EmployeeId,
+                    EmployeeName = t.Employee?.FullName ?? "Unknown",
+                    ClockIn = t.ClockIn,
+                    ClockOut = t.ClockOut
+                });
 
-            var entry = new TimeEntry { EmployeeId = emp.Id, ClockIn = DateTime.UtcNow };
-            _db.TimeEntries.Add(entry);
-            await _db.SaveChangesAsync();
-            return entry;
-        }
+                return Results.Ok(result);
+            });
 
-        public async Task<TimeEntry?> ClockOut(int userId)
-        {
-            var emp = await GetEmployeeByUserId(userId);
-            if (emp == null) return null;
+            // ADMIN CLOCK IN (For User)
+            group.MapPost("/clockin/{userId}", async (int userId, TimeEntryService service) =>
+            {
+                var result = await service.ClockIn(userId);
+                if (result is null)
+                    return Results.Conflict(new { message = "Already clocked in or user not found." });
 
-            var active = await _db.TimeEntries.FirstOrDefaultAsync(t => t.EmployeeId == emp.Id && t.ClockOut == null);
-            if (active == null) return null;
+                return Results.Ok(new { Id = result.Id, ClockIn = result.ClockIn });
+            });
 
-            active.ClockOut = DateTime.UtcNow;
-            await _db.SaveChangesAsync();
-            return active;
-        }
+            // ADMIN CLOCK OUT (For User)
+            group.MapPost("/clockout/{userId}", async (int userId, TimeEntryService service) =>
+            {
+                var result = await service.ClockOut(userId);
+                if (result is null)
+                    return Results.BadRequest(new { message = "No active shift for this user." });
 
-        public async Task<TimeEntry?> GetCurrentEntry(int userId)
-        {
-            var emp = await GetEmployeeByUserId(userId);
-            if (emp == null) return null;
-            return await _db.TimeEntries
-                .Where(t => t.EmployeeId == emp.Id && t.ClockOut == null)
-                .OrderByDescending(t => t.ClockIn)
-                .FirstOrDefaultAsync();
-        }
-
-        public async Task<List<TimeEntry>> GetAllActive()
-        {
-            return await _db.TimeEntries
-                .Include(t => t.Employee)
-                .Where(t => t.ClockOut == null)
-                .ToListAsync();
-        }
-
-        // --- NYE METODER FOR ADMIN (Bruker EmployeeId direkte) ---
-
-        public async Task<TimeEntry?> ClockInByEmployeeId(int employeeId)
-        {
-            // 1. Check if employee exists
-            var emp = await _db.Employees.FindAsync(employeeId);
-            if (emp == null) return null;
-
-            // 2. Check if already active
-            var active = await _db.TimeEntries.FirstOrDefaultAsync(t => t.EmployeeId == emp.Id && t.ClockOut == null);
-            if (active != null) return null; // Allerede stemplet inn
-
-            // 3. Create entry
-            var entry = new TimeEntry { EmployeeId = emp.Id, ClockIn = DateTime.UtcNow };
-            _db.TimeEntries.Add(entry);
-            await _db.SaveChangesAsync();
-            return entry;
-        }
-
-        public async Task<TimeEntry?> ClockOutByEmployeeId(int employeeId)
-        {
-            // 1. Find active shift for this specific employee ID
-            var active = await _db.TimeEntries.FirstOrDefaultAsync(t => t.EmployeeId == employeeId && t.ClockOut == null);
-            if (active == null) return null; // Ingen aktiv vakt
-
-            // 2. Clock out
-            active.ClockOut = DateTime.UtcNow;
-            await _db.SaveChangesAsync();
-            return active;
+                return Results.Ok(new { Id = result.Id, ClockOut = result.ClockOut });
+            });
         }
     }
 }

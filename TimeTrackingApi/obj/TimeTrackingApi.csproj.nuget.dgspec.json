@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Abode\\Desktop\\dotnet-O-fork-endpoint-cleanup\\TimeTrackingApi\\TimeTrackingApi.csproj": {}
+    "C:\\Users\\Abode\\Desktop\\New folder (12)\\dotnet-O-fork-endpoint-cleanup\\TimeTrackingApi\\TimeTrackingApi.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Abode\\Desktop\\dotnet-O-fork-endpoint-cleanup\\TimeTrackingApi\\TimeTrackingApi.csproj": {
+    "C:\\Users\\Abode\\Desktop\\New folder (12)\\dotnet-O-fork-endpoint-cleanup\\TimeTrackingApi\\TimeTrackingApi.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Abode\\Desktop\\dotnet-O-fork-endpoint-cleanup\\TimeTrackingApi\\TimeTrackingApi.csproj",
+        "projectUniqueName": "C:\\Users\\Abode\\Desktop\\New folder (12)\\dotnet-O-fork-endpoint-cleanup\\TimeTrackingApi\\TimeTrackingApi.csproj",
         "projectName": "TimeTrackingApi",
-        "projectPath": "C:\\Users\\Abode\\Desktop\\dotnet-O-fork-endpoint-cleanup\\TimeTrackingApi\\TimeTrackingApi.csproj",
+        "projectPath": "C:\\Users\\Abode\\Desktop\\New folder (12)\\dotnet-O-fork-endpoint-cleanup\\TimeTrackingApi\\TimeTrackingApi.csproj",
         "packagesPath": "C:\\Users\\Abode\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Abode\\Desktop\\dotnet-O-fork-endpoint-cleanup\\TimeTrackingApi\\obj\\",
+        "outputPath": "C:\\Users\\Abode\\Desktop\\New folder (12)\\dotnet-O-fork-endpoint-cleanup\\TimeTrackingApi\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

@@ -63,35 +63,6 @@ namespace TimeTrackingApi.Services
                 .OrderByDescending(t => t.ClockIn)
                 .FirstOrDefaultAsync();
         }
-        public async Task<TimeEntry?> ClockInByEmployeeId(int employeeId)
-{
-    var emp = await GetEmployeeById(employeeId);
-    if (emp == null) return null; // Admin cannot auto-create employees here
-
-    // Check for active shift
-    var active = await _db.TimeEntries
-        .FirstOrDefaultAsync(t => t.EmployeeId == emp.Id && t.ClockOut == null);
-        
-    if (active != null) return null; // Already clocked in
-
-    var entry = new TimeEntry { EmployeeId = emp.Id, ClockIn = DateTime.UtcNow };
-    _db.TimeEntries.Add(entry);
-    await _db.SaveChangesAsync();
-    return entry;
-}
-
-// ✅ NEW: Admin specific Clock Out
-public async Task<TimeEntry?> ClockOutByEmployeeId(int employeeId)
-{
-    var active = await _db.TimeEntries
-        .FirstOrDefaultAsync(t => t.EmployeeId == employeeId && t.ClockOut == null);
-
-    if (active == null) return null;
-
-    active.ClockOut = DateTime.UtcNow;
-    await _db.SaveChangesAsync();
-    return active;
-}
 
         // Fix: This method is required by DashboardEndpoints
         public async Task<List<TimeEntry>> GetAllActive()
