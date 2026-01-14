@@ -9,8 +9,9 @@ namespace TimeTrackingApi.Models
         public int EmployeeId { get; set; }
         public Employee? Employee { get; set; }
 
-        public DateTime PeriodStart { get; set; }
-        public DateTime PeriodEnd { get; set; }
+        // ✅ FIX: Renamed properties to match Endpoint expectations
+        public DateTime PayPeriodStart { get; set; }
+        public DateTime PayPeriodEnd { get; set; }
 
         [Column(TypeName = "decimal(18,2)")]
         public decimal TotalHours { get; set; }
@@ -20,6 +21,13 @@ namespace TimeTrackingApi.Models
 
         [Column(TypeName = "decimal(18,2)")]
         public decimal GrossPay { get; set; }
+
+        // ✅ FIX: Added NetPay
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal NetPay { get; set; }
+
+        // ✅ FIX: Added IsPaid
+        public bool IsPaid { get; set; }
 
         public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
     }

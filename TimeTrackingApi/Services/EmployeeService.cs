@@ -67,6 +67,10 @@ namespace TimeTrackingApi.Services
             existing.ManagerId = input.ManagerId;
             // existing.UserId = input.UserId; 
 
+            // Update new fields
+            existing.HourlyRate = input.HourlyRate;
+            existing.VacationDaysBalance = input.VacationDaysBalance; 
+
             await _db.SaveChangesAsync();
             return existing;
         }

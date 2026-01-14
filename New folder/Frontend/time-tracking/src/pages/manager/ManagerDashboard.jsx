@@ -1,6 +1,8 @@
 
 import { useEffect, useState } from "react";
 import managerApi from "../../api/managerApi";
+import employeeApi from "../../api/employeeApi";
+import { Link } from "react-router-dom";
 
 const getWeekNumber = (d) => {
   d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
@@ -49,13 +51,23 @@ export default function ManagerDashboard() {
       setMyTeam(res.data);
     } catch (err) { console.error(err); }
   };
+
+  const handleClockIn = async () => {
+    try { await employeeApi.clockIn(); alert("Clocked In!"); }
+    catch (e) { alert("Failed to clock in"); }
+  };
+
+  const handleClockOut = async () => {
+    try { await employeeApi.clockOut(); alert("Clocked Out!"); }
+    catch (e) { alert("Failed to clock out"); }
+  };
   const handleViewDetails = async (empId, empName) => {
     try {
-        const res = await managerApi.getWeeklyDetails(empId, currentYear, currentWeek);
-        setSelectedEmployeeDetails({ name: empName, entries: res.data });
-        setIsModalOpen(true);
+      const res = await managerApi.getWeeklyDetails(empId, currentYear, currentWeek);
+      setSelectedEmployeeDetails({ name: empName, entries: res.data });
+      setIsModalOpen(true);
     } catch (err) {
-        alert("Failed to load details.");
+      alert("Failed to load details.");
     }
   };
 
@@ -116,6 +128,12 @@ export default function ManagerDashboard() {
         </button>
         <button onClick={() => setActiveTab("createAbsence")} className={`pb-2 px-4 font-medium ${activeTab === "createAbsence" ? "text-indigo-600 border-b-2 border-indigo-600" : "text-slate-500"}`}>
           Record Absence
+        </button>
+        <button onClick={() => setActiveTab("team")} className={`pb-2 px-4 font-medium ${activeTab === "team" ? "text-indigo-600 border-b-2 border-indigo-600" : "text-slate-500"}`}>
+          My Team
+        </button>
+        <button onClick={() => setActiveTab("attendance")} className={`pb-2 px-4 font-medium ${activeTab === "attendance" ? "text-indigo-600 border-b-2 border-indigo-600" : "text-slate-500"}`}>
+          My Attendance
         </button>
         <button onClick={handleExport} className="pb-2 px-4 font-medium text-emerald-600 hover:text-emerald-700 ml-auto">
           📥 Export Payroll
@@ -236,45 +254,94 @@ export default function ManagerDashboard() {
           </form>
         </div>
       )}
-      {isModalOpen && selectedEmployeeDetails && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-lg relative">
-                <button onClick={() => setIsModalOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
-                <h3 className="text-xl font-bold mb-4">Details: {selectedEmployeeDetails.name}</h3>
-                
-                <div className="max-h-80 overflow-y-auto">
-                    {selectedEmployeeDetails.entries.length > 0 ? (
-                        <table className="w-full text-left text-sm">
-                            <thead className="bg-slate-50 text-slate-600">
-                                <tr>
-                                    <th className="p-2">Date</th>
-                                    <th className="p-2">In</th>
-                                    <th className="p-2">Out</th>
-                                    <th className="p-2 text-right">Hours</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {selectedEmployeeDetails.entries.map((e, idx) => (
-                                    <tr key={idx} className="border-b last:border-0">
-                                        <td className="p-2">{new Date(e.date).toLocaleDateString()}</td>
-                                        <td className="p-2">{new Date(e.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
-                                        <td className="p-2">{e.end ? new Date(e.end).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : <span className="text-amber-500 italic">Active</span>}</td>
-                                        <td className="p-2 text-right font-medium">{e.hours}h</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    ) : (
-                        <p className="text-slate-500 italic">No entries logged for this week.</p>
-                    )}
-                </div>
 
-                <div className="mt-6 flex justify-end gap-2">
-                    <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded">Close</button>
-                </div>
-            </div>
+      {activeTab === "team" && (
+        <div className="bg-white rounded-xl shadow p-6">
+          <h2 className="text-xl font-bold mb-6">My Team</h2>
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b text-slate-500 text-sm">
+                <th className="py-2">Name</th>
+                <th className="py-2">Position</th>
+                <th className="py-2">Department</th>
+                <th className="py-2 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {myTeam.map(e => (
+                <tr key={e.id} className="border-b last:border-0 hover:bg-slate-50">
+                  <td className="py-4 font-medium">{e.fullName}</td>
+                  <td className="py-4">{e.position}</td>
+                  <td className="py-4">{e.department}</td>
+                  <td className="py-4 text-right">
+                    <Link to={`/admin/employees/edit/${e.id}`} className="text-indigo-600 hover:text-indigo-800 font-medium">
+                      Edit
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      )}
+      )
+      }
+
+      {
+        activeTab === "attendance" && (
+          <div className="bg-white rounded-xl shadow p-6 max-w-md mx-auto text-center">
+            <h2 className="text-xl font-bold mb-6">My Attendance</h2>
+            <div className="flex justify-center gap-4">
+              <button onClick={handleClockIn} className="bg-emerald-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-emerald-700 shadow">
+                Clock In
+              </button>
+              <button onClick={handleClockOut} className="bg-rose-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-rose-700 shadow">
+                Clock Out
+              </button>
+            </div>
+          </div>
+        )
+      }
+      {
+        isModalOpen && selectedEmployeeDetails && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-lg relative">
+              <button onClick={() => setIsModalOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+              <h3 className="text-xl font-bold mb-4">Details: {selectedEmployeeDetails.name}</h3>
+
+              <div className="max-h-80 overflow-y-auto">
+                {selectedEmployeeDetails.entries.length > 0 ? (
+                  <table className="w-full text-left text-sm">
+                    <thead className="bg-slate-50 text-slate-600">
+                      <tr>
+                        <th className="p-2">Date</th>
+                        <th className="p-2">In</th>
+                        <th className="p-2">Out</th>
+                        <th className="p-2 text-right">Hours</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedEmployeeDetails.entries.map((e, idx) => (
+                        <tr key={idx} className="border-b last:border-0">
+                          <td className="p-2">{new Date(e.date).toLocaleDateString()}</td>
+                          <td className="p-2">{new Date(e.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                          <td className="p-2">{e.end ? new Date(e.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : <span className="text-amber-500 italic">Active</span>}</td>
+                          <td className="p-2 text-right font-medium">{e.hours}h</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <p className="text-slate-500 italic">No entries logged for this week.</p>
+                )}
+              </div>
+
+              <div className="mt-6 flex justify-end gap-2">
+                <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded">Close</button>
+              </div>
+            </div>
+          </div>
+        )
+      }
     </div>
   );
 }

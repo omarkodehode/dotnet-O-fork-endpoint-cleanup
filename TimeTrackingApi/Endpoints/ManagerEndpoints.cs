@@ -21,7 +21,6 @@ namespace TimeTrackingApi.Endpoints
                  return emp?.Id;
             }
 
-            // 1. GET WEEKLY SUMMARY
             group.MapGet("/weekly-summary", async (int year, int week, HttpContext ctx, EmployeeService empService, TimeEntryService timeService) =>
             {
                 var managerId = await GetCurrentEmployeeId(ctx, empService);
@@ -37,7 +36,6 @@ namespace TimeTrackingApi.Endpoints
                 
                 var details = await timeService.GetEmployeeWeeklyDetails(managerId.Value, employeeId, year, week);
                 
-                // Map to simple DTO
                 return Results.Ok(details.Select(d => new 
                 {
                     Date = d.ClockIn,
@@ -48,7 +46,6 @@ namespace TimeTrackingApi.Endpoints
                 }));
             });
 
-            // 2. APPROVE WEEK
             group.MapPost("/approve-week/{employeeId}", async (int employeeId, [FromBody] WeekApprovalRequest req, HttpContext ctx, EmployeeService empService, TimeEntryService timeService) =>
             {
                 var managerId = await GetCurrentEmployeeId(ctx, empService);
@@ -66,8 +63,7 @@ namespace TimeTrackingApi.Endpoints
                 return Results.File(csvBytes, "text/csv", $"payroll-{year}-{month}.csv");
             });
 
-            // 4. GET MY TEAM
-            group.MapGet("/api/employees", async (HttpContext ctx, EmployeeService empService) =>
+            group.MapGet("/employees", async (HttpContext ctx, EmployeeService empService) =>
             {
                 var managerId = await GetCurrentEmployeeId(ctx, empService);
                 if (managerId == null) return Results.Unauthorized();
@@ -78,8 +74,7 @@ namespace TimeTrackingApi.Endpoints
                 }));
             });
 
-            // 5. GET TEAM ABSENCES
-            group.MapGet("/api/absences", async (HttpContext ctx, EmployeeService empService, AbsenceService absService) =>
+            group.MapGet("/absences", async (HttpContext ctx, EmployeeService empService, AbsenceService absService) =>
             {
                 var managerId = await GetCurrentEmployeeId(ctx, empService);
                 if (managerId == null) return Results.Unauthorized();
@@ -96,14 +91,13 @@ namespace TimeTrackingApi.Endpoints
                 }));
             });
 
-            // 6. APPROVE/REJECT ABSENCE
-           group.MapPost("/api/absences/{id}/approve", async (int id, [FromBody] ApproveAbsenceRequest req, AbsenceService absService) =>
+            group.MapPost("/absences/{id}/approve", async (int id, [FromBody] ApproveAbsenceRequest req, AbsenceService absService) =>
             {
                 var success = await absService.ToggleApproval(id, req.Approved);
                 return success ? Results.Ok(new { message = req.Approved ? "Approved" : "Rejected" }) : Results.NotFound();
             }); 
 
-            group.MapPost("/api/absences", async ([FromBody] CreateAbsenceManagerDto dto, HttpContext ctx, EmployeeService empService, AbsenceService absService) =>
+            group.MapPost("/absences", async ([FromBody] CreateAbsenceManagerDto dto, HttpContext ctx, EmployeeService empService, AbsenceService absService) =>
             {
                 var managerId = await GetCurrentEmployeeId(ctx, empService);
                 if (managerId == null) return Results.Unauthorized();

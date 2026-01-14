@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import api from "../api/apiClient"; 
+import api from "../api/apiClient";
 
 const AuthContext = createContext();
 
@@ -11,14 +11,14 @@ export const AuthProvider = ({ children }) => {
     // 1. Check for existing token on load
     const token = localStorage.getItem("token");
     const storedUser = localStorage.getItem("user");
-    
+
     if (token && storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);
-        
+
         // SAFETY: Force role to lowercase even from storage
         if (parsedUser.role) {
-            parsedUser.role = parsedUser.role.toLowerCase();
+          parsedUser.role = parsedUser.role.toLowerCase();
         }
 
         setUser(parsedUser);
@@ -36,35 +36,35 @@ export const AuthProvider = ({ children }) => {
   const login = async (username, password) => {
     console.log("⏳ Attempting Login...");
     try {
-        const res = await api.post("/auth/login", { username, password });
-        
-        const { token, user: apiUser } = res.data; 
-        
-        if (!apiUser) throw new Error("No user data in response");
+      const res = await api.post("/api/auth/login", { username, password });
 
-        // This ensures the Sidebar checks (=== "admin") always pass.
-        const cleanRole = apiUser.role ? apiUser.role.toLowerCase() : "guest";
+      const { token, user: apiUser } = res.data;
 
-        const userData = { 
-            id: apiUser.id,
-            username: apiUser.username, 
-            role: cleanRole 
-        };
-        
-        console.log("✅ Login Success. Role is:", cleanRole);
+      if (!apiUser) throw new Error("No user data in response");
 
-        // Save to storage
-        localStorage.setItem("token", token);
-        localStorage.setItem("user", JSON.stringify(userData));
-        
-        // Set axios header for future requests
-        api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-        setUser(userData);
-        
-        return userData; // Return for the Login page to use if needed
+      // This ensures the Sidebar checks (=== "admin") always pass.
+      const cleanRole = apiUser.role ? apiUser.role.toLowerCase() : "guest";
+
+      const userData = {
+        id: apiUser.id,
+        username: apiUser.username,
+        role: cleanRole
+      };
+
+      console.log("✅ Login Success. Role is:", cleanRole);
+
+      // Save to storage
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(userData));
+
+      // Set axios header for future requests
+      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      setUser(userData);
+
+      return userData; // Return for the Login page to use if needed
     } catch (error) {
-        console.error("❌ Login Failed:", error);
-        throw error;
+      console.error("❌ Login Failed:", error);
+      throw error;
     }
   };
 

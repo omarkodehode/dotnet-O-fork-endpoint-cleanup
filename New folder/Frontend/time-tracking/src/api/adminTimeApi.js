@@ -1,7 +1,7 @@
 import api from "./apiClient";
 
 const adminTimeApi = {
-  getActiveShifts: () => api.get("/admin/time/active"),
+  getActiveShifts: () => api.get("/api/admin/time/active"),
 
   clockInUser: (employeeId) => api.post(`/api/admin/time/clockin/${employeeId}`),
 

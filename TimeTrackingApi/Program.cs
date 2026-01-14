@@ -82,9 +82,18 @@ app.UseAuthorization();
 // --- DB Seed ---
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate();
-    Seed.Initialize(db);
+    try 
+    {
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        db.Database.Migrate();
+        Seed.Initialize(db);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"An error occurred while seeding the database: {ex.Message}");
+        Console.WriteLine(ex.StackTrace);
+        throw; // Re-throw to ensure process exits with error
+    }
 }
 
 // --- Endpoints ---

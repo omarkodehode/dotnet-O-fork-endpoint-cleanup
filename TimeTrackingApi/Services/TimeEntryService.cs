@@ -247,7 +247,7 @@ namespace TimeTrackingApi.Services
 
             if (managerId.HasValue)
             {
-                query = query.Where(t => t.Employee.ManagerId == managerId.Value);
+                query = query.Where(t => t.Employee != null && t.Employee.ManagerId == managerId.Value);
             }
 
             var approvedEntries = await query
@@ -272,7 +272,7 @@ namespace TimeTrackingApi.Services
 
             if (managerId.HasValue)
             {
-                absQuery = absQuery.Where(a => a.Employee.ManagerId == managerId.Value);
+                absQuery = absQuery.Where(a => a.Employee != null && a.Employee.ManagerId == managerId.Value);
             }
 
             var approvedAbsences = await absQuery.ToListAsync();

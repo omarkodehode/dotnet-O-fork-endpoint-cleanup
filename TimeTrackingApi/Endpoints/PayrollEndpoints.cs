@@ -24,21 +24,34 @@ namespace TimeTrackingApi.Endpoints
             // POST /payroll/generate - Generate payroll for a period
             group.MapPost("/generate", async (AppDbContext db) =>
             {
-                // Simple placeholder logic: Create a dummy payroll record for now
-                // In a real app, you would calculate hours * rate here
-                var employees = await db.Employees.ToListAsync();
+                var start = DateTime.UtcNow.AddDays(-30);
+                var end = DateTime.UtcNow;
+
+                var employees = await db.Employees
+                    .Include(e => e.TimeEntries)
+                    .ToListAsync();
+                    
                 var payrolls = new List<Payroll>();
 
                 foreach (var emp in employees)
                 {
+                    // Calculate total hours in the period
+                    var totalHours = emp.TimeEntries
+                        .Where(t => t.ClockIn >= start && t.ClockIn <= end && t.ClockOut != null)
+                        .Sum(t => (t.ClockOut!.Value - t.ClockIn).TotalHours);
+
+                    var gross = (decimal)totalHours * emp.HourlyRate;
+                    var taxRate = 0.20m; // Simple 20% tax
+                    var net = gross * (1 - taxRate);
+
                     payrolls.Add(new Payroll
                     {
                         EmployeeId = emp.Id,
-                        PayPeriodStart = DateTime.UtcNow.AddDays(-30),
-                        PayPeriodEnd = DateTime.UtcNow,
-                        TotalHours = 160, // Dummy data
-                        GrossPay = 3000,  // Dummy data
-                        NetPay = 2500,    // Dummy data
+                        PayPeriodStart = start,
+                        PayPeriodEnd = end,
+                        TotalHours = (decimal)Math.Round(totalHours, 2),
+                        GrossPay = Math.Round(gross, 2),
+                        NetPay = Math.Round(net, 2),
                         IsPaid = false
                     });
                 }

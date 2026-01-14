@@ -7,7 +7,8 @@ namespace TimeTrackingApi.Utils
     {
         public static void Initialize(AppDbContext db)
         {
-            db.Database.EnsureCreated();
+            // db.Database.EnsureCreated(); // REMOVED: Managed by migrations in Program.cs
+
 
             var existingAdmin = db.Users.FirstOrDefault(u => u.Username == "admin");
 

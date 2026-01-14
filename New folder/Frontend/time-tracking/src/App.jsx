@@ -45,13 +45,8 @@ export default function App() {
         <Route element={<MainLayout />}>
 
           {/* Manager Dashboard */}
-
-          <Route path="/manager" element={<ManagerDashboard />} /> 
-                    <Route path="/admin/employees" element={<Employees />} />
-<Route path="/manager/absences" element={<Absences />} />
-          <Route path="/manager/absences/create" element={<CreateAbsence />} />
+          <Route path="/manager" element={<ManagerDashboard />} />
           <Route path="/manager/absences/edit/:id" element={<EditAbsence />} />
-           <Route path="/manager/payroll" element={<Payroll />} />
 
           {/* Shared Management Pages */}
           <Route path="/admin/employees" element={<Employees />} />
@@ -62,7 +57,7 @@ export default function App() {
           <Route path="/admin/absences" element={<Absences />} />
           <Route path="/admin/absences/create" element={<CreateAbsence />} />
           <Route path="/admin/absences/edit/:id" element={<EditAbsence />} />
-           <Route path="/admin/payroll" element={<Payroll />} />
+          <Route path="/admin/payroll" element={<Payroll />} />
         </Route>
       </Route>
 

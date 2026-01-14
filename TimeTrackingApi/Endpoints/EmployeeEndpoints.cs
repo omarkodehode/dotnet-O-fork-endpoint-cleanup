@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore; // ✅ FIX: Added for FirstOrDefaultAsync
+using TimeTrackingApi.Data;          // ✅ FIX: Added for AppDbContext
 using TimeTrackingApi.Models;
 using TimeTrackingApi.Services;
 using TimeTrackingApi.DTOs.Employee; 
@@ -12,66 +14,59 @@ namespace TimeTrackingApi.Endpoints
         {
             var group = app.MapGroup("/api/employees").RequireAuthorization("ManagerOnly");
 
-            // GET All
             group.MapGet("", async (EmployeeService service) => 
                 Results.Ok(await service.GetAll()));
 
-            // GET Single
             group.MapGet("/{id}", async (int id, EmployeeService service) =>
             {
                 var emp = await service.GetById(id);
                 return emp is not null ? Results.Ok(emp) : Results.NotFound();
             });
 
-            // CREATE
-            group.MapPost("", async ([FromBody] CreateEmployeeDto dto, EmployeeService empService, AuthService authService) =>
+            // ✅ FIX: Added 'AppDbContext db' to parameters
+            group.MapPost("", async ([FromBody] CreateEmployeeDto dto, EmployeeService empService, AuthService authService, AppDbContext db) =>
             {
                 if (string.IsNullOrEmpty(dto.Username) || string.IsNullOrEmpty(dto.Password))
                 {
                     return Results.BadRequest(new { message = "Username and Password are required." });
                 }
 
-                // 1. Create User (Login)
                 var user = await authService.Register(dto.Username, dto.Password, dto.Role);
                 if (user == null)
                 {
                     return Results.Conflict(new { message = "Username already exists." });
                 }
 
-                // 2. Create Employee (Profile)
-               var department = await db.Departments
-    .FirstOrDefaultAsync(d => d.Name == dto.Department);
+                var department = await db.Departments
+                    .FirstOrDefaultAsync(d => d.Name == dto.Department);
 
-var newEmployee = new Employee
-{
-    FullName = dto.Name,
-    Position = dto.Position, // 👈 Fix: Use the actual position from DTO if available
-    DepartmentId = department?.Id, // 👈 Fix: Assign the relationship
-    UserId = user.Id,
-    Email = dto.Email,
-    HourlyRate = dto.HourlyRate,
-    VacationDaysBalance = 25 // Default
-};
+                var newEmployee = new Employee
+                {
+                    FullName = dto.Name,
+                    Position = dto.Position,
+                    DepartmentId = department?.Id,
+                    UserId = user.Id,
+                    Email = dto.Email,
+                    HourlyRate = dto.HourlyRate,
+                    VacationDaysBalance = dto.VacationDays ?? 25
+                };
 
                 await empService.Create(newEmployee);
                 
                 return Results.Created($"/api/employees/{newEmployee.Id}", NewEmployee.MapFrom(newEmployee));
             }).RequireAuthorization("AdminOnly");
 
-            // UPDATE
             group.MapPut("/{id}", async (int id, [FromBody] UpdateEmployeeDto dto, EmployeeService service) =>
             {
                 var updated = await service.Update(id, dto);
                 return updated is not null ? Results.Ok(updated) : Results.NotFound();
             });
 
-            // DELETE Single
             group.MapDelete("/{id}", async (int id, EmployeeService service) =>
             {
                 return await service.Delete(id) ? Results.Ok() : Results.NotFound();
             });
 
-            // DELETE ALL
             group.MapDelete("/", async (EmployeeService service) =>
             {
                 await service.DeleteAll();
