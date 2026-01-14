@@ -48,7 +48,6 @@ namespace TimeTrackingApi.Endpoints
             });
 
             // 4. ✅ NEW: GLOBAL PAYROLL EXPORT
-            // Usage: /admin/time/export-payroll?year=2025&month=10
             group.MapGet("/export-payroll", async (int year, int month, TimeEntryService service) =>
             {
                 var csvBytes = await service.GetGlobalPayrollCsv(month, year);
