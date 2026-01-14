@@ -8,7 +8,7 @@ namespace TimeTrackingApi.Endpoints
     {
         public static void MapAdminTimeEntryEndpoints(this IEndpointRouteBuilder app)
         {
-            var group = app.MapGroup("/admin/time").RequireAuthorization("AdminOnly");
+            var group = app.MapGroup("/api/admin/time").RequireAuthorization("AdminOnly");
 
             // 1. GET ALL ACTIVE (For Admin Dashboard)
             group.MapGet("/active", async (TimeEntryService service) =>
@@ -46,8 +46,12 @@ namespace TimeTrackingApi.Endpoints
 
                 return Results.Ok(new { Id = result.Id, ClockOut = result.ClockOut });
             });
+            group.MapGet("/history/{userId}", async (int userId, TimeEntryService service) => 
+{
+    var history = await service.GetHistory(userId);
+    return Results.Ok(history);
+});
 
-            // 4. ✅ NEW: GLOBAL PAYROLL EXPORT
             group.MapGet("/export-payroll", async (int year, int month, TimeEntryService service) =>
             {
                 var csvBytes = await service.GetGlobalPayrollCsv(month, year);

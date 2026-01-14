@@ -15,5 +15,6 @@ namespace TimeTrackingApi.DTOs.Employee
 
         [JsonPropertyName("managerId")]
         public int? ManagerId { get; set; }
+        //add password
     }
 }

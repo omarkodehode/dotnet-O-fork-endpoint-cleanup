@@ -15,7 +15,7 @@ const departmentApi = {
 
   // Delete a department
   deleteDepartment: async (id) => {
-    return await api.delete(`/departments/${id}`);
+    return await api.delete(`/api/departments/${id}`);
   }
 };
 

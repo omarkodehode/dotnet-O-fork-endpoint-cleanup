@@ -8,7 +8,7 @@ namespace TimeTrackingApi.DTOs.Auth
 
     public class ResetPasswordDto
     {
-        public int UserId { get; set; }
+        public int UserId { get; set; } //should change
         public string NewPassword { get; set; } = string.Empty;
     }
 }

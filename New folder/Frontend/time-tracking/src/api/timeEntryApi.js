@@ -2,19 +2,19 @@ import api from "./apiClient";
 
 const timeEntryApi = {
   // Get current status
-  getStatus: () => api.get("/employee/status"),
+  getStatus: () => api.get("/api/employee/status"),
 
   // ✅ FIX: Removed hyphen to match Backend endpoint "/employee/clockin"
-  clockIn: () => api.post("/employee/clockin", {}),
+  clockIn: () => api.post("/api/employee/clockin", {}),
 
   // ✅ FIX: Removed hyphen to match Backend endpoint "/employee/clockout"
-  clockOut: () => api.post("/employee/clockout", {}),
+  clockOut: () => api.post("/api/employee/clockout", {}),
   
   // Get history
-  getHistory: () => api.get("/employee/history"),
+  getHistory: () => api.get("/api/employee/history"),
 
   // ✅ NEW: Flex Balance
-  getFlexBalance: () => api.get("/employee/flex-balance"),
+  getFlexBalance: () => api.get("/api/employee/flex-balance"),
 };
 
 export default timeEntryApi;

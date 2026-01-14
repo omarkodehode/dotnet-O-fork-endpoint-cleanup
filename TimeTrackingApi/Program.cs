@@ -93,11 +93,11 @@ app.MapEmployeeEndpoints();
 app.MapAdminTimeEntryEndpoints(); 
 app.MapAbsenceEndpoints();
 app.MapEmployeeAreaEndpoints();
-app.MapDashboardEndpoints(); // Renamed to match standard convention if extension method was MapDashboard
+app.MapDashboardEndpoints(); 
 app.MapLogEndpoints(); 
 app.MapDepartmentEndpoints();
 app.MapManagerEndpoints();
-
+app.MapPayrollEndpoints();
 
 app.MapGet("/", () => "Time Tracking API is running! 🚀");
 

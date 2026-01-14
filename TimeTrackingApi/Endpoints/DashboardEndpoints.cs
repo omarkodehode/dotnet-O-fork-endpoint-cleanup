@@ -9,7 +9,7 @@ namespace TimeTrackingApi.Endpoints
     {
         public static void MapDashboardEndpoints(this IEndpointRouteBuilder app)
         {
-            app.MapGet("/dashboard", async (EmployeeService empService, TimeEntryService timeService, AbsenceService absService) =>
+            app.MapGet("/api/dashboard", async (EmployeeService empService, TimeEntryService timeService, AbsenceService absService) =>
             {
                 var totalEmployees = (await empService.GetAll()).Count;
                 var activeEntries = await timeService.GetAllActive();

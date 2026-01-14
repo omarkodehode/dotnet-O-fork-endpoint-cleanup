@@ -20,6 +20,9 @@ export default function ManagerDashboard() {
   const [myTeam, setMyTeam] = useState([]);
   const [absenceForm, setAbsenceForm] = useState({ employeeId: "", startDate: "", endDate: "", type: "Vacation", description: "" });
 
+  const [selectedEmployeeDetails, setSelectedEmployeeDetails] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   useEffect(() => {
     if (activeTab === "hours") fetchSummary();
     if (activeTab === "absences") fetchAbsences();
@@ -46,12 +49,22 @@ export default function ManagerDashboard() {
       setMyTeam(res.data);
     } catch (err) { console.error(err); }
   };
+  const handleViewDetails = async (empId, empName) => {
+    try {
+        const res = await managerApi.getWeeklyDetails(empId, currentYear, currentWeek);
+        setSelectedEmployeeDetails({ name: empName, entries: res.data });
+        setIsModalOpen(true);
+    } catch (err) {
+        alert("Failed to load details.");
+    }
+  };
 
   const handleApproveWeek = async (empId) => {
     if (!window.confirm("Lock this week for this employee?")) return;
     try {
       await managerApi.approveWeek(empId, currentYear, currentWeek);
       fetchSummary();
+      if (isModalOpen) setIsModalOpen(false);
     } catch (err) { alert("Failed to approve."); }
   };
 
@@ -221,6 +234,45 @@ export default function ManagerDashboard() {
             </div>
             <button type="submit" className="w-full bg-indigo-600 text-white py-2 rounded font-bold hover:bg-indigo-700">Save Absence</button>
           </form>
+        </div>
+      )}
+      {isModalOpen && selectedEmployeeDetails && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-lg relative">
+                <button onClick={() => setIsModalOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+                <h3 className="text-xl font-bold mb-4">Details: {selectedEmployeeDetails.name}</h3>
+                
+                <div className="max-h-80 overflow-y-auto">
+                    {selectedEmployeeDetails.entries.length > 0 ? (
+                        <table className="w-full text-left text-sm">
+                            <thead className="bg-slate-50 text-slate-600">
+                                <tr>
+                                    <th className="p-2">Date</th>
+                                    <th className="p-2">In</th>
+                                    <th className="p-2">Out</th>
+                                    <th className="p-2 text-right">Hours</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {selectedEmployeeDetails.entries.map((e, idx) => (
+                                    <tr key={idx} className="border-b last:border-0">
+                                        <td className="p-2">{new Date(e.date).toLocaleDateString()}</td>
+                                        <td className="p-2">{new Date(e.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
+                                        <td className="p-2">{e.end ? new Date(e.end).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : <span className="text-amber-500 italic">Active</span>}</td>
+                                        <td className="p-2 text-right font-medium">{e.hours}h</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    ) : (
+                        <p className="text-slate-500 italic">No entries logged for this week.</p>
+                    )}
+                </div>
+
+                <div className="mt-6 flex justify-end gap-2">
+                    <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded">Close</button>
+                </div>
+            </div>
         </div>
       )}
     </div>

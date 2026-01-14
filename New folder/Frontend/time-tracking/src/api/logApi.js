@@ -1,7 +1,7 @@
 import api from "./apiClient";
 
 const logApi = {
-  getAll: () => api.get("/logs"),
+  getAll: () => api.get("/api/logs"),
 };
 
 export default logApi;

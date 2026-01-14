@@ -9,7 +9,7 @@ export default function Absences() {
 
   const fetchAbsences = async () => {
     try {
-      const res = await absenceApi.getAbsences();
+      const res = await managerApi.getPendingAbsences();
       setAbsences(res.data || []);
     } catch (err) {
       console.error(err);
@@ -55,7 +55,6 @@ export default function Absences() {
         <table className="min-w-full text-left">
           <thead className="bg-gray-100">
             <tr>
-              {/* Updated Headers to match data structure */}
               {["ID", "Employee", "Start Date", "End Date", "Type", "Approved", "Actions"].map((h) => (
                 <th key={h} className="px-4 py-2 border font-semibold text-gray-700">{h}</th>
               ))}
@@ -66,27 +65,21 @@ export default function Absences() {
               <tr key={a.id} className="border-b hover:bg-gray-50 transition">
                 <td className="px-4 py-2">{a.id}</td>
                 
-                {/* Check your backend response for this field! 
-                   It might be `a.employee?.firstName` or just `a.employeeName` 
-                */}
+             
                 <td className="px-4 py-2 font-medium">
                   {a.employeeName || (a.employee ? `${a.employee.firstName} ${a.employee.lastName}` : "Unknown")}
                 </td>
 
-                {/* ✅ Fixed: Changed a.date to a.startDate */}
                 <td className="px-4 py-2">{formatDate(a.startDate)}</td>
                 
-                {/* Added End Date column */}
                 <td className="px-4 py-2">{formatDate(a.endDate)}</td>
 
-                {/* ✅ Fixed: Changed a.reason to a.type */}
                 <td className="px-4 py-2">
                   <span className="px-2 py-1 bg-gray-100 rounded text-sm">
                     {a.type || "Other"}
                   </span>
                 </td>
 
-                {/* Added Approval Status */}
                 <td className="px-4 py-2">
                   {a.approved ? (
                     <span className="text-green-600 font-bold text-sm bg-green-100 px-2 py-1 rounded">Yes</span>

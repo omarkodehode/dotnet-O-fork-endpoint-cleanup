@@ -11,7 +11,7 @@ namespace TimeTrackingApi.Endpoints
         {
             // ✅ CHANGED: "ManagerOnly" -> "AdminOnly"
             // This is the global list for HR/Admins. Managers use /manager/absences.
-            var adminGroup = app.MapGroup("/absences").RequireAuthorization("AdminOnly");
+            var adminGroup = app.MapGroup("/api/absences").RequireAuthorization("AdminOnly");
 
             // GET ALL (Global)
             adminGroup.MapGet("/", async (AbsenceService service) =>
@@ -44,7 +44,7 @@ namespace TimeTrackingApi.Endpoints
             {
                 var created = await service.Create(abs);
                 if(created == null) return Results.Conflict("Invalid Employee or Duplicate.");
-                return Results.Created($"/absences/{created.Id}", created);
+                return Results.Created($"/api/absences/{created.Id}", created);
             });
 
             // UPDATE

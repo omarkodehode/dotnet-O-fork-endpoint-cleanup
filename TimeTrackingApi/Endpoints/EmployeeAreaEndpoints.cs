@@ -11,16 +11,15 @@ namespace TimeTrackingApi.Endpoints
     {
         public static void MapEmployeeAreaEndpoints(this IEndpointRouteBuilder app)
         {
-            var group = app.MapGroup("/employee").RequireAuthorization("EmployeeOnly");
+            var group = app.MapGroup("/api/employee").RequireAuthorization("EmployeeOnly");
 
-            // Helper function to get UserID
             int? GetUserId(ClaimsPrincipal user)
             {
                 var idStr = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 return int.TryParse(idStr, out int id) ? id : null;
             }
 
-            // ✅ NEW: GET FLEX BALANCE
+           
             group.MapGet("/flex-balance", async (HttpContext ctx, TimeEntryService service) =>
             {
                 var userId = GetUserId(ctx.User);
@@ -68,7 +67,6 @@ namespace TimeTrackingApi.Endpoints
                 return Results.Ok(new { message = "Clocked Out", time = result.ClockOut });
             });
 
-            // UPDATE TIME ENTRY (Correction)
             group.MapPut("/time-entries/{id}", async (int id, [FromBody] UpdateEntryDto dto, HttpContext ctx, TimeEntryService service) =>
             {
                 var userId = GetUserId(ctx.User);
@@ -83,12 +81,10 @@ namespace TimeTrackingApi.Endpoints
                 }
                 catch (InvalidOperationException ex)
                 {
-                    // Returns 400 Bad Request if locked/old
                     return Results.BadRequest(new { error = ex.Message }); 
                 }
             });
 
-            // ✅ NEW: DELETE TIME ENTRY
             group.MapDelete("/time-entries/{id}", async (int id, HttpContext ctx, TimeEntryService service) =>
             {
                 var userId = GetUserId(ctx.User);
@@ -118,7 +114,7 @@ namespace TimeTrackingApi.Endpoints
                     ClockIn = t.ClockIn,
                     ClockOut = t.ClockOut,
                     Duration = t.ClockOut.HasValue ? (t.ClockOut.Value - t.ClockIn).TotalHours : 0,
-                    IsApproved = t.IsApproved // Return approval status
+                    IsApproved = t.IsApproved
                 });
 
                 return Results.Ok(dtos);

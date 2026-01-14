@@ -15,7 +15,6 @@ namespace TimeTrackingApi.Services
             _key = key;
         }
 
-        // ✅ FIX: Ensures this method accepts exactly these 3 arguments
         public string GenerateToken(int userId, string username, string role)
         {
             var tokenHandler = new JwtSecurityTokenHandler();

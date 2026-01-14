@@ -9,12 +9,11 @@ namespace TimeTrackingApi.Endpoints
     {
         public static void MapDepartmentEndpoints(this IEndpointRouteBuilder app)
         {
-            var group = app.MapGroup("/departments").RequireAuthorization("AdminOnly"); // ✅ Changed to AdminOnly
+            var group = app.MapGroup("/api/departments").RequireAuthorization("AdminOnly"); // ✅ Changed to AdminOnly
 
-            // ✅ UPDATED: Fetch with details (Employees + Managers)
             group.MapGet("/", async (DepartmentService service) =>
             {
-                var list = await service.GetAllWithDetails(); // Make sure Service has this method!
+                var list = await service.GetAllWithDetails(); 
                 
                 var result = list.Select(d => new 
                 {

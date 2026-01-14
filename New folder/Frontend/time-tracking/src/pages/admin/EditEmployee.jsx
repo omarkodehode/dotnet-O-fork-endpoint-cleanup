@@ -1,37 +1,39 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import employeeApi from "../../api/employeeApi";
-import departmentApi from "../../api/departmentApi"; // ✅ FIXED: Default import
+import departmentApi from "../../api/departmentApi";
+import * as authApi from "../../api/auth"; 
 
 export default function EditEmployee() {
   const { id } = useParams();
   const navigate = useNavigate();
 
   const [departments, setDepartments] = useState([]);
-  const [employees, setEmployees] = useState([]); // For Manager dropdown
+  const [employees, setEmployees] = useState([]); 
 
   const [form, setForm] = useState({
     fullName: "",
     position: "",
-    departmentId: "", // ✅ Add ID
-    managerId: ""     // ✅ Add Manager
+    departmentId: "",
+    managerId: "",
+    userId: null 
   });
+  
+  const [newPassword, setNewPassword] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
     departmentApi.getDepartments().then(setDepartments).catch(console.error);
-
-    // 2. Load All Employees (to select a manager)
     employeeApi.getAll().then(setEmployees).catch(console.error);
 
-    // 3. Load Current Employee Data
     employeeApi.getById(id)
       .then(res => {
         setForm({
           fullName: res.fullName || "",
           position: res.position || "",
-          departmentId: res.departmentId || "", // ✅ Load existing
-          managerId: res.managerId || ""       // ✅ Load existing
+          departmentId: res.departmentId || "",
+          managerId: res.managerId || "",
+          userId: res.userId || null 
         });
       })
       .catch(() => setError("Failed to load employee data."));
@@ -40,9 +42,9 @@ export default function EditEmployee() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // ✅ Convert empty strings to null before sending
       const payload = {
-        ...form,
+        fullName: form.fullName,
+        position: form.position,
         departmentId: form.departmentId ? parseInt(form.departmentId) : null,
         managerId: form.managerId ? parseInt(form.managerId) : null
       };
@@ -84,7 +86,7 @@ export default function EditEmployee() {
           />
         </div>
 
-        {/* ✅ Department Dropdown */}
+        {/* Department Dropdown */}
         <div>
           <label className="block text-sm font-medium text-slate-700">Department</label>
           <select
@@ -99,7 +101,7 @@ export default function EditEmployee() {
           </select>
         </div>
 
-        {/* ✅ Manager Dropdown */}
+        {/* Manager Dropdown */}
         <div>
           <label className="block text-sm font-medium text-slate-700">Manager</label>
           <select
@@ -109,11 +111,47 @@ export default function EditEmployee() {
           >
             <option value="">-- No Manager --</option>
             {employees
-              .filter(emp => emp.id !== parseInt(id)) // Don't let them be their own manager
+              .filter(emp => emp.id !== parseInt(id)) 
               .map(emp => (
                 <option key={emp.id} value={emp.id}>{emp.fullName}</option>
               ))}
           </select>
+        </div>
+
+        {/* Security / Password Reset Section */}
+        <div className="mt-8 bg-gray-50 p-6 rounded-lg border border-gray-200">
+            <h3 className="text-lg font-bold text-gray-800 mb-4">Security</h3>
+            <div className="flex gap-4 items-end">
+                <div className="flex-1">
+                    <label className="block text-sm font-medium text-gray-700">Reset Password</label>
+                    <input
+                        type="password"
+                        placeholder="Enter new password"
+                        className="w-full p-2 border rounded mt-1"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                    />
+                </div>
+                <button
+                    type="button"
+                    onClick={async () => {
+                        if(!newPassword) return alert("Enter a password");
+                        try {
+                            if(!form.userId) return alert("User ID not found for this employee (they might not have a login).");
+                            
+                            await authApi.resetPassword({ userId: form.userId, newPassword });
+                            alert("Password reset successfully");
+                            setNewPassword("");
+                        } catch(e) {
+                            console.error(e);
+                            alert("Failed to reset password");
+                        }
+                    }}
+                    className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+                >
+                    Reset
+                </button>
+            </div>
         </div>
 
         <div className="flex gap-4 mt-6">

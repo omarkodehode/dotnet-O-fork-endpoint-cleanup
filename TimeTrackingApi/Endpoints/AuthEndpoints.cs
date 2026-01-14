@@ -9,7 +9,7 @@ namespace TimeTrackingApi.Endpoints
     {
         public static void MapAuthEndpoints(this IEndpointRouteBuilder app)
         {
-            var group = app.MapGroup("/auth");
+            var group = app.MapGroup("/api/auth");
 
             // LOGIN
             group.MapPost("/login", async ([FromBody] LoginRequest req, AuthService auth) =>

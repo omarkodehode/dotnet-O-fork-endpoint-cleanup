@@ -10,7 +10,7 @@ namespace TimeTrackingApi.Endpoints
     {
         public static void MapEmployeeEndpoints(this IEndpointRouteBuilder app)
         {
-            var group = app.MapGroup("/employees").RequireAuthorization("ManagerOnly");
+            var group = app.MapGroup("/api/employees").RequireAuthorization("ManagerOnly");
 
             // GET All
             group.MapGet("", async (EmployeeService service) => 
@@ -39,17 +39,23 @@ namespace TimeTrackingApi.Endpoints
                 }
 
                 // 2. Create Employee (Profile)
-                var newEmployee = new Employee
-                {
-                    FullName = dto.Name,
-                    Position = dto.Department, 
-                    UserId = user.Id,
-                    HireDate = DateTime.UtcNow
-                };
+               var department = await db.Departments
+    .FirstOrDefaultAsync(d => d.Name == dto.Department);
+
+var newEmployee = new Employee
+{
+    FullName = dto.Name,
+    Position = dto.Position, // 👈 Fix: Use the actual position from DTO if available
+    DepartmentId = department?.Id, // 👈 Fix: Assign the relationship
+    UserId = user.Id,
+    Email = dto.Email,
+    HourlyRate = dto.HourlyRate,
+    VacationDaysBalance = 25 // Default
+};
 
                 await empService.Create(newEmployee);
                 
-                return Results.Created($"/employees/{newEmployee.Id}", NewEmployee.MapFrom(newEmployee));
+                return Results.Created($"/api/employees/{newEmployee.Id}", NewEmployee.MapFrom(newEmployee));
             }).RequireAuthorization("AdminOnly");
 
             // UPDATE

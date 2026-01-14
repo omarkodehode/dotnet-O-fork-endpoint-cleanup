@@ -48,9 +48,9 @@ export default function Absences() {
           {error && <p className="text-red-600 text-sm mb-3 bg-red-50 p-2 rounded border border-red-100">{error}</p>}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm text-slate-600 mb-1">Date</label>
+              <label className="block text-sm text-slate-600 mb-1">StartDate</label>
               <input 
-                type="date" 
+                type="Startdate" 
                 required 
                 className="w-full p-2 border rounded-lg"
                 value={form.date}
@@ -58,7 +58,17 @@ export default function Absences() {
               />
             </div>
             <div>
-              <label className="block text-sm text-slate-600 mb-1">Reason</label>
+              <label className="block text-sm text-slate-600 mb-1">EndDate</label>
+              <input 
+                type="Enddate" 
+                required 
+                className="w-full p-2 border rounded-lg"
+                value={form.date}
+                onChange={e => setForm({...form, date: e.target.value})}
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-slate-600 mb-1">Description</label>
               <input 
                 type="text" 
                 required 

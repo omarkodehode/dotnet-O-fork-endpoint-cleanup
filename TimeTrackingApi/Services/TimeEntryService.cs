@@ -191,6 +191,19 @@ namespace TimeTrackingApi.Services
             }
             return result;
         }
+        public async Task<List<TimeEntry>> GetEmployeeWeeklyDetails(int managerId, int employeeId, int year, int weekNumber)
+        {
+            var emp = await _db.Employees
+                .Include(e => e.TimeEntries)
+                .FirstOrDefaultAsync(e => e.Id == employeeId && e.ManagerId == managerId);
+
+            if (emp == null) return new List<TimeEntry>();
+
+            return emp.TimeEntries
+                .Where(t => t.ClockIn.Year == year && GetIsoWeekOfYear(t.ClockIn) == weekNumber)
+                .OrderBy(t => t.ClockIn)
+                .ToList();
+        }
 
         public async Task<bool> ApproveWeek(int managerId, int employeeId, int year, int weekNumber)
         {
@@ -214,19 +227,17 @@ namespace TimeTrackingApi.Services
             return true;
         }
 
-        // ✅ 1. MANAGER EXPORT (Filtered by Manager)
         public async Task<byte[]> GetPayrollCsv(int month, int year, int managerId)
         {
             return await GenerateCsv(month, year, managerId);
         }
 
-        // ✅ 2. ADMIN GLOBAL EXPORT (No Manager Filter)
         public async Task<byte[]> GetGlobalPayrollCsv(int month, int year)
         {
             return await GenerateCsv(month, year, null);
         }
 
-        // ✅ 3. Shared CSV Logic
+        // ✅ 3. Shared CSV Logi
         private async Task<byte[]> GenerateCsv(int month, int year, int? managerId)
         {
             // Entries Query

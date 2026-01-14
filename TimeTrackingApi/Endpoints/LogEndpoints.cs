@@ -9,7 +9,7 @@ namespace TimeTrackingApi.Endpoints
     {
         public static void MapLogEndpoints(this IEndpointRouteBuilder app)
         {
-            var group = app.MapGroup("/logs").RequireAuthorization("AdminOnly");
+            var group = app.MapGroup("/api/logs").RequireAuthorization("AdminOnly");
 
             group.MapGet("/", async (AppDbContext db) =>
             {
