@@ -1,17 +1,31 @@
-namespace TimeTrackingApi.DTOs.Employee
+using System.Text.Json.Serialization;
+
+namespace TimeTrackingApi.DTOs
 {
-    public class CreateEmployeeDto
+    public class EmployeeCreateRequest
     {
-        public string Name { get; set; } = string.Empty;
+        [JsonPropertyName("name")]
+        public string FullName { get; set; } = string.Empty;
+        
+        [JsonPropertyName("username")]
         public string Username { get; set; } = string.Empty;
+        
+        [JsonPropertyName("password")]
         public string Password { get; set; } = string.Empty;
+        
+        [JsonPropertyName("role")]
         public string Role { get; set; } = "Employee";
         
-        // ✅ FIX: Added properties required by EmployeeEndpoints
-        public string Position { get; set; } = string.Empty;
-        public string? Email { get; set; }
-        public decimal HourlyRate { get; set; }
+        [JsonPropertyName("department")]  // Frontend sends department name as string
         public string? Department { get; set; }
-        public int? VacationDays { get; set; }
+        
+        [JsonPropertyName("position")]
+        public string? Position { get; set; }
+        
+        [JsonPropertyName("hourlyRate")]
+        public decimal HourlyRate { get; set; } = 0;
+        
+        [JsonPropertyName("vacationDaysBalance")]
+        public int VacationDaysBalance { get; set; } = 0;
     }
 }

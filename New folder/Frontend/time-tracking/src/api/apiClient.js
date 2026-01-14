@@ -1,13 +1,14 @@
 import axios from "axios";
 
-const api = axios.create({
-  baseURL: "http://localhost:5192", // Make sure this matches your backend port!
+const apiClient = axios.create({
+  // Make sure this matches your running Backend URL
+  baseURL: "http://localhost:5192", 
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-api.interceptors.request.use((config) => {
+apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -15,4 +16,4 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-export default api;
+export default apiClient;

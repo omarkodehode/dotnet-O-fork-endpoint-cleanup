@@ -8,6 +8,7 @@ namespace TimeTrackingApi.Models
         public byte[] PasswordHash { get; set; } = Array.Empty<byte>();
 
         public string Role { get; set; } = "User"; // Admin, Manager, User
+        public string? Email { get; set; }
         
       
         public Employee? Employee { get; set; }

@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace TimeTrackingApi.DTOs.Employee
+namespace TimeTrackingApi.DTOs
 {
     public class EmployeeDto
     {

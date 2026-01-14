@@ -15,6 +15,25 @@ namespace TimeTrackingApi.Services
             _db = db;
         }
 
+        // --- ALIASES FOR ENDPOINTS ---
+        public async Task<TimeEntry?> ClockInAsync(int userId) => await ClockIn(userId);
+        public async Task<TimeEntry?> ClockOutAsync(int userId) => await ClockOut(userId);
+        
+        public async Task<object> GetStatusAsync(int userId)
+        {
+            var entry = await GetCurrentEntry(userId);
+            return new 
+            { 
+                IsClockedIn = entry != null, 
+                ClockIn = entry?.ClockIn 
+            };
+        }
+
+        public async Task<object> GetWeeklySummaryForManagerAsync(int year, int week)
+        {
+            return await GetTeamWeeklySummaryLogic(null, year, week);
+        }
+
         // --- CORE CRUD ---
 
         public async Task<List<TimeEntry>> GetAllActive()
@@ -45,7 +64,7 @@ namespace TimeTrackingApi.Services
         public async Task<TimeEntry?> ClockIn(int userId)
         {
             var emp = await _db.Employees.FirstOrDefaultAsync(e => e.UserId == userId);
-            if (emp == null) return null;
+            if (emp == null) return null; 
 
             var active = await GetCurrentEntry(userId);
             if (active != null) return null; 
@@ -53,7 +72,8 @@ namespace TimeTrackingApi.Services
             var entry = new TimeEntry
             {
                 EmployeeId = emp.Id,
-                ClockIn = DateTime.UtcNow
+                ClockIn = DateTime.UtcNow,
+                IsApproved = false
             };
 
             _db.TimeEntries.Add(entry);
@@ -64,14 +84,17 @@ namespace TimeTrackingApi.Services
         public async Task<TimeEntry?> ClockOut(int userId)
         {
             var entry = await GetCurrentEntry(userId);
-            if (entry == null) return null;
+            if (entry == null) return null; 
+
+            if (DateTime.UtcNow < entry.ClockIn) 
+                throw new InvalidOperationException("Cannot clock out before clock in time.");
 
             entry.ClockOut = DateTime.UtcNow;
             await _db.SaveChangesAsync();
             return entry;
         }
 
-        // --- UPDATE / DELETE with LOCKING LOGIC ---
+        // --- UPDATE / DELETE ---
 
         public async Task<bool> UpdateEntry(int userId, int entryId, DateTime newIn, DateTime? newOut)
         {
@@ -82,7 +105,10 @@ namespace TimeTrackingApi.Services
             if (entry == null) return false;
 
             if (IsEntryLocked(entry))
-                throw new InvalidOperationException("Cannot update entries that are approved or older than 7 days.");
+                throw new InvalidOperationException("Cannot update locked entries.");
+
+            if (newOut.HasValue && newOut.Value < newIn)
+                throw new ArgumentException("Clock out time cannot be before clock in time.");
 
             entry.ClockIn = newIn;
             entry.ClockOut = newOut;
@@ -99,7 +125,7 @@ namespace TimeTrackingApi.Services
             if (entry == null) return false;
 
             if (IsEntryLocked(entry))
-                throw new InvalidOperationException("Cannot delete entries that are approved or older than 7 days.");
+                throw new InvalidOperationException("Cannot delete locked entries.");
 
             _db.TimeEntries.Remove(entry);
             await _db.SaveChangesAsync();
@@ -158,15 +184,19 @@ namespace TimeTrackingApi.Services
             return entries.Sum(t => (t.ClockOut!.Value - t.ClockIn).TotalHours);
         }
 
-        // --- MANAGER & ADMIN FEATURES ---
+        // --- MANAGER HELPERS ---
 
         public async Task<object> GetTeamWeeklySummary(int managerId, int year, int weekNumber)
         {
-            var employees = await _db.Employees
-                .Where(e => e.ManagerId == managerId)
-                .Include(e => e.TimeEntries)
-                .ToListAsync();
+            return await GetTeamWeeklySummaryLogic(managerId, year, weekNumber);
+        }
 
+        private async Task<object> GetTeamWeeklySummaryLogic(int? managerId, int year, int weekNumber)
+        {
+            var query = _db.Employees.Include(e => e.TimeEntries).AsQueryable();
+            if (managerId.HasValue) query = query.Where(e => e.ManagerId == managerId);
+
+            var employees = await query.ToListAsync();
             var result = new List<object>();
 
             foreach (var emp in employees)
@@ -184,52 +214,56 @@ namespace TimeTrackingApi.Services
                 {
                     EmployeeId = emp.Id,
                     Name = emp.FullName,
-                    Week = weekNumber,
                     TotalHours = Math.Round(totalHours, 2),
                     IsApproved = isApproved
                 });
             }
             return result;
         }
-        public async Task<List<TimeEntry>> GetEmployeeWeeklyDetails(int managerId, int employeeId, int year, int weekNumber)
+
+        public async Task<List<WeeklyDetailDto>> GetWeeklyDetailsAsync(int employeeId, int year, int week)
         {
-            var emp = await _db.Employees
-                .Include(e => e.TimeEntries)
-                .FirstOrDefaultAsync(e => e.Id == employeeId && e.ManagerId == managerId);
+            var jan1 = new DateTime(year, 1, 1);
+            var daysOffset = DayOfWeek.Monday - jan1.DayOfWeek;
+            var firstMonday = jan1.AddDays(daysOffset);
+            var weekNum = ISOWeek.GetWeekOfYear(jan1);
+            if (weekNum > 1) firstMonday = firstMonday.AddDays(-7); 
+            
+            var startOfWeek = firstMonday.AddDays((week - 1) * 7);
+            var endOfWeek = startOfWeek.AddDays(7);
 
-            if (emp == null) return new List<TimeEntry>();
+            var entries = await _db.TimeEntries
+                .Where(t => t.EmployeeId == employeeId && t.ClockIn >= startOfWeek && t.ClockIn < endOfWeek)
+                .ToListAsync();
 
-            return emp.TimeEntries
-                .Where(t => t.ClockIn.Year == year && GetIsoWeekOfYear(t.ClockIn) == weekNumber)
-                .OrderBy(t => t.ClockIn)
-                .ToList();
-        }
-
-        public async Task<bool> ApproveWeek(int managerId, int employeeId, int year, int weekNumber)
-        {
-            var emp = await _db.Employees
-                .Include(e => e.TimeEntries)
-                .FirstOrDefaultAsync(e => e.Id == employeeId && e.ManagerId == managerId);
-
-            if (emp == null) return false;
-
-            var entriesToLock = emp.TimeEntries
-                .Where(t => GetIsoWeekOfYear(t.ClockIn) == weekNumber && t.ClockIn.Year == year)
-                .ToList();
-
-            foreach (var entry in entriesToLock)
+            return entries.Select(e => new WeeklyDetailDto
             {
-                entry.IsApproved = true;
-                entry.ApprovedAt = DateTime.UtcNow;
-            }
-
-            await _db.SaveChangesAsync();
-            return true;
+                Date = e.ClockIn,
+                ClockIn = e.ClockIn,
+                ClockOut = e.ClockOut,
+                Hours = e.ClockOut.HasValue ? (e.ClockOut.Value - e.ClockIn).TotalHours : 0,
+                IsApproved = e.IsApproved
+            }).ToList();
         }
 
-        public async Task<byte[]> GetPayrollCsv(int month, int year, int managerId)
+        public async Task ApproveWeekAsync(int employeeId, int year, int week)
         {
-            return await GenerateCsv(month, year, managerId);
+            var jan1 = new DateTime(year, 1, 1);
+            var daysOffset = DayOfWeek.Monday - jan1.DayOfWeek;
+            var firstMonday = jan1.AddDays(daysOffset);
+            var startOfWeek = firstMonday.AddDays((week - 1) * 7);
+            var endOfWeek = startOfWeek.AddDays(7);
+
+            var entries = await _db.TimeEntries
+                .Where(t => t.EmployeeId == employeeId && t.ClockIn >= startOfWeek && t.ClockIn < endOfWeek)
+                .ToListAsync();
+
+            foreach(var e in entries) 
+            {
+                e.IsApproved = true;
+                e.ApprovedAt = DateTime.UtcNow;
+            }
+            await _db.SaveChangesAsync();
         }
 
         public async Task<byte[]> GetGlobalPayrollCsv(int month, int year)
@@ -237,25 +271,20 @@ namespace TimeTrackingApi.Services
             return await GenerateCsv(month, year, null);
         }
 
-        // ✅ 3. Shared CSV Logi
+        public async Task<byte[]> GetPayrollCsv(int month, int year, int managerId)
+        {
+            return await GenerateCsv(month, year, managerId);
+        }
+
         private async Task<byte[]> GenerateCsv(int month, int year, int? managerId)
         {
-            // Entries Query
-            var query = _db.TimeEntries
-                .Include(t => t.Employee)
+            var query = _db.TimeEntries.Include(t => t.Employee)
                 .Where(t => t.IsApproved && t.ClockIn.Month == month && t.ClockIn.Year == year);
 
-            if (managerId.HasValue)
-            {
+            if (managerId.HasValue) 
                 query = query.Where(t => t.Employee != null && t.Employee.ManagerId == managerId.Value);
-            }
 
-            var approvedEntries = await query
-                .OrderBy(t => t.Employee != null ? t.Employee.FullName : "")
-                .ThenBy(t => t.ClockIn)
-                .ToListAsync();
-
-            // Build CSV
+            var approvedEntries = await query.OrderBy(t => t.Employee != null ? t.Employee.FullName : "").ThenBy(t => t.ClockIn).ToListAsync();
             var sb = new StringBuilder();
             sb.AppendLine("EmployeeID;Name;Date;Hours;Type;ApprovedAt");
 
@@ -264,37 +293,23 @@ namespace TimeTrackingApi.Services
                 var hours = t.ClockOut.HasValue ? (t.ClockOut.Value - t.ClockIn).TotalHours : 0;
                 sb.AppendLine($"{t.EmployeeId};{t.Employee?.FullName};{t.ClockIn:yyyy-MM-dd};{Math.Round(hours, 2)};Work;{t.ApprovedAt}");
             }
-
-            // Absences Query
-            var absQuery = _db.Absences
-                .Include(a => a.Employee)
-                .Where(a => a.Approved && a.StartDate.Month == month && a.StartDate.Year == year);
-
-            if (managerId.HasValue)
-            {
-                absQuery = absQuery.Where(a => a.Employee != null && a.Employee.ManagerId == managerId.Value);
-            }
-
-            var approvedAbsences = await absQuery.ToListAsync();
-
-            foreach (var a in approvedAbsences)
-            {
-                 var days = (a.EndDate - a.StartDate).TotalDays + 1;
-                 var hours = days * 7.5;
-                 sb.AppendLine($"{a.EmployeeId};{a.Employee?.FullName};{a.StartDate:yyyy-MM-dd};{hours};Absence-{a.Type};-");
-            }
-
             return Encoding.UTF8.GetBytes(sb.ToString());
         }
 
         private static int GetIsoWeekOfYear(DateTime time)
         {
             DayOfWeek day = CultureInfo.InvariantCulture.Calendar.GetDayOfWeek(time);
-            if (day >= DayOfWeek.Monday && day <= DayOfWeek.Wednesday)
-            {
-                time = time.AddDays(3);
-            }
+            if (day >= DayOfWeek.Monday && day <= DayOfWeek.Wednesday) time = time.AddDays(3);
             return CultureInfo.InvariantCulture.Calendar.GetWeekOfYear(time, CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
         }
+    }
+
+    public class WeeklyDetailDto
+    {
+        public DateTime Date { get; set; }
+        public DateTime ClockIn { get; set; }
+        public DateTime? ClockOut { get; set; }
+        public double Hours { get; set; }
+        public bool IsApproved { get; set; }
     }
 }

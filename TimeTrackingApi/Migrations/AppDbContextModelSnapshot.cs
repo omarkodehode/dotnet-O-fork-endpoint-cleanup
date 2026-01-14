@@ -17,7 +17,7 @@ namespace TimeTrackingApi.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.1")
+                .HasAnnotation("ProductVersion", "8.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -86,9 +86,6 @@ namespace TimeTrackingApi.Migrations
 
                     b.Property<int?>("DepartmentId")
                         .HasColumnType("integer");
-
-                    b.Property<string>("Email")
-                        .HasColumnType("text");
 
                     b.Property<string>("FullName")
                         .IsRequired()
@@ -204,6 +201,9 @@ namespace TimeTrackingApi.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Email")
+                        .HasColumnType("text");
 
                     b.Property<byte[]>("PasswordHash")
                         .IsRequired()

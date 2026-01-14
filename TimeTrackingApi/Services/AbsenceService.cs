@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using TimeTrackingApi.Data;
-using TimeTrackingApi.DTOs.Absences; // Ensure you have this namespace for CreateAbsenceDto
+using TimeTrackingApi.DTOs.Absences; 
 using TimeTrackingApi.Models;
 
 namespace TimeTrackingApi.Services
@@ -14,14 +14,24 @@ namespace TimeTrackingApi.Services
             _db = db;
         }
 
+        // --- ALIASES ---
+        public async Task<List<Absence>> GetPendingAbsencesAsync() => await GetPending();
+        public async Task<List<Absence>> GetAbsencesForEmployeeAsync(int employeeId) => await GetByEmployee(employeeId);
+        public async Task<Absence?> CreateAbsenceAsync(CreateAbsenceDto dto) => await Create(dto.EmployeeId, dto);
+        public async Task ApproveAbsenceAsync(int id, bool approved) => await ToggleApproval(id, approved);
+
+        // --- CORE METHODS ---
+        public async Task<List<Absence>> GetPending()
+        {
+            return await _db.Absences
+                .Include(a => a.Employee)
+                .Where(a => !a.Approved)
+                .ToListAsync();
+        }
+
         public async Task<List<Absence>> GetByManager(int managerId)
         {
-            // 1. Find all employees managed by this ID
-            var subordinateIds = _db.Employees
-                .Where(e => e.ManagerId == managerId)
-                .Select(e => e.Id);
-
-            // 2. Fetch their absences
+            var subordinateIds = _db.Employees.Where(e => e.ManagerId == managerId).Select(e => e.Id);
             return await _db.Absences
                 .Include(a => a.Employee)
                 .Where(a => subordinateIds.Contains(a.EmployeeId))
@@ -29,83 +39,59 @@ namespace TimeTrackingApi.Services
                 .ToListAsync();
         }
 
-        // ✅ NEW: Approve/Reject Absence
         public async Task<bool> ToggleApproval(int absenceId, bool isApproved)
         {
             var abs = await _db.Absences.FindAsync(absenceId);
             if (abs == null) return false;
 
-            abs.Approved = isApproved;
+            if (isApproved) abs.Approved = true;
+            else _db.Absences.Remove(abs);
+            
             await _db.SaveChangesAsync();
             return true;
         }
 
-        // --- GET ALL (Admin) ---
         public async Task<List<Absence>> GetAll()
         {
-            return await _db.Absences
-                .Include(a => a.Employee)
-                .OrderByDescending(a => a.StartDate) // Updated to StartDate
-                .ToListAsync();
+            return await _db.Absences.Include(a => a.Employee).OrderByDescending(a => a.StartDate).ToListAsync();
         }
 
-        // --- GET BY EMPLOYEE ---
-        public async Task<List<Absence>> GetByEmployee(int userId)
+        public async Task<List<Absence>> GetByEmployee(int id)
         {
-            var emp = await _db.Employees.FirstOrDefaultAsync(e => e.UserId == userId);
-            if (emp == null) return new List<Absence>();
+            // Try by EmployeeId first
+            var list = await _db.Absences.Where(a => a.EmployeeId == id).OrderByDescending(a => a.StartDate).ToListAsync();
+            if (list.Any()) return list;
 
-            return await _db.Absences
-                .Where(a => a.EmployeeId == emp.Id)
-                .OrderByDescending(a => a.StartDate)
-                .ToListAsync();
+            // Fallback to UserId
+            var emp = await _db.Employees.FirstOrDefaultAsync(e => e.UserId == id);
+            if (emp != null)
+            {
+                return await _db.Absences.Where(a => a.EmployeeId == emp.Id).OrderByDescending(a => a.StartDate).ToListAsync();
+            }
+            return new List<Absence>();
         }
 
-        // --- GET SINGLE BY ID ---
         public async Task<Absence?> GetById(int id)
         {
-            return await _db.Absences
-                .Include(a => a.Employee)
-                .FirstOrDefaultAsync(a => a.Id == id);
+            return await _db.Absences.Include(a => a.Employee).FirstOrDefaultAsync(a => a.Id == id);
         }
 
-        // --- CREATE (Employee Request) ---
-        public async Task<Absence?> Create(int userId, CreateAbsenceDto dto)
+        // Create with UserId or EmployeeId support
+        public async Task<Absence?> Create(int id, CreateAbsenceDto dto)
         {
-            // 1. Validate Date Range
             if (dto.EndDate < dto.StartDate) return null; 
 
-            // 2. Find Employee
-            var emp = await _db.Employees.FirstOrDefaultAsync(e => e.UserId == userId);
-            
-            // Auto-create employee if missing (failsafe for this project)
-            if (emp == null)
-            {
-                emp = new Employee 
-                { 
-                    UserId = userId, 
-                    FullName = "Employee", 
-                    Position = "Staff", 
-                    HireDate = DateTime.UtcNow 
-                };
-                _db.Employees.Add(emp);
-                await _db.SaveChangesAsync();
-            }
+            var emp = await _db.Employees.FindAsync(id) ?? await _db.Employees.FirstOrDefaultAsync(e => e.UserId == id);
+            if (emp == null) return null;
 
-            // 3. Ensure UTC
             var startUtc = DateTime.SpecifyKind(dto.StartDate, DateTimeKind.Utc);
             var endUtc = DateTime.SpecifyKind(dto.EndDate, DateTimeKind.Utc);
 
-            // 4. Check for Overlapping Absences
-            // (If existing Start is before new End AND existing End is after new Start)
             var overlap = await _db.Absences
-                .AnyAsync(a => a.EmployeeId == emp.Id && 
-                               a.StartDate <= endUtc && 
-                               a.EndDate >= startUtc);
+                .AnyAsync(a => a.EmployeeId == emp.Id && a.StartDate <= endUtc && a.EndDate >= startUtc);
             
-            if (overlap) return null; // Date range already taken
+            if (overlap) return null; 
 
-            // 5. Create & Save
             var absence = new Absence
             {
                 EmployeeId = emp.Id,
@@ -121,71 +107,96 @@ namespace TimeTrackingApi.Services
             return absence;
         }
 
-        // --- CREATE (Admin Override) ---
         public async Task<Absence?> Create(Absence abs)
         {
-            // Validate Employee exists
             var empExists = await _db.Employees.AnyAsync(e => e.Id == abs.EmployeeId);
             if (!empExists) return null;
-
-            // Validate Dates
             if (abs.EndDate < abs.StartDate) return null;
 
             abs.StartDate = DateTime.SpecifyKind(abs.StartDate, DateTimeKind.Utc);
             abs.EndDate = DateTime.SpecifyKind(abs.EndDate, DateTimeKind.Utc);
-
-            // Check Overlap
-            var overlap = await _db.Absences
-                .AnyAsync(a => a.EmployeeId == abs.EmployeeId && 
-                               a.StartDate <= abs.EndDate && 
-                               a.EndDate >= abs.StartDate);
-
-            if (overlap) return null;
 
             _db.Absences.Add(abs);
             await _db.SaveChangesAsync();
             return abs;
         }
 
-        // --- UPDATE ---
-        public async Task<Absence?> Update(int id, Absence data)
-        {
-            var existing = await _db.Absences.FindAsync(id);
-            if (existing == null) return null;
-
-            // Validate Dates
-            if (data.EndDate < data.StartDate) return null;
-
-            existing.StartDate = DateTime.SpecifyKind(data.StartDate, DateTimeKind.Utc);
-            existing.EndDate = DateTime.SpecifyKind(data.EndDate, DateTimeKind.Utc);
-            
-            // Update Type & Desc (Old 'Reason' is gone)
-            existing.Type = data.Type;
-            existing.Description = data.Description; 
-            existing.Approved = data.Approved;
-
-            await _db.SaveChangesAsync();
-            return existing;
-        }
-
-        // --- DELETE ---
         public async Task<bool> Delete(int id)
         {
             var abs = await _db.Absences.FindAsync(id);
             if (abs == null) return false;
-
             _db.Absences.Remove(abs);
             await _db.SaveChangesAsync();
             return true;
         }
 
-        // --- DASHBOARD HELPER ---
         public async Task<int> GetAbsenceCountForDate(DateTime date)
         {
-            // Counts employees absent on a specific date (within range)
-            return await _db.Absences
-                .CountAsync(a => a.StartDate.Date <= date.Date && a.EndDate.Date >= date.Date);
+            return await _db.Absences.CountAsync(a => a.StartDate.Date <= date.Date && a.EndDate.Date >= date.Date);
         }
 
+        // --- USERNAME-BASED METHODS ---
+        public async Task<List<Absence>> GetByUsername(string username)
+        {
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.Username == username);
+            if (user == null) return new List<Absence>();
+
+            var emp = await _db.Employees.FirstOrDefaultAsync(e => e.UserId == user.Id);
+            if (emp == null) return new List<Absence>();
+
+            return await _db.Absences
+                .Where(a => a.EmployeeId == emp.Id)
+                .OrderByDescending(a => a.StartDate)
+                .ToListAsync();
+        }
+
+        public async Task<bool> DeleteByUsername(string username, int absenceId)
+        {
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.Username == username);
+            if (user == null) return false;
+
+            var emp = await _db.Employees.FirstOrDefaultAsync(e => e.UserId == user.Id);
+            if (emp == null) return false;
+
+            var absence = await _db.Absences.FirstOrDefaultAsync(a => a.Id == absenceId && a.EmployeeId == emp.Id);
+            if (absence == null) return false;
+
+            _db.Absences.Remove(absence);
+            await _db.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<Absence?> CreateByUsername(string username, CreateAbsenceDto dto)
+        {
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.Username == username);
+            if (user == null) return null;
+
+            var emp = await _db.Employees.FirstOrDefaultAsync(e => e.UserId == user.Id);
+            if (emp == null) return null;
+
+            if (dto.EndDate < dto.StartDate) return null;
+
+            var startUtc = DateTime.SpecifyKind(dto.StartDate, DateTimeKind.Utc);
+            var endUtc = DateTime.SpecifyKind(dto.EndDate, DateTimeKind.Utc);
+
+            var overlap = await _db.Absences
+                .AnyAsync(a => a.EmployeeId == emp.Id && a.StartDate <= endUtc && a.EndDate >= startUtc);
+
+            if (overlap) return null;
+
+            var absence = new Absence
+            {
+                EmployeeId = emp.Id,
+                StartDate = startUtc,
+                EndDate = endUtc,
+                Type = dto.Type,
+                Description = dto.Description,
+                Approved = false
+            };
+
+            _db.Absences.Add(absence);
+            await _db.SaveChangesAsync();
+            return absence;
+        }
     }
 }

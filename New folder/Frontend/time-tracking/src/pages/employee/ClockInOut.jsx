@@ -3,83 +3,79 @@ import api from "../../api/apiClient";
 
 export default function ClockInOut() {
   const [status, setStatus] = useState("Loading...");
-  const [lastTime, setLastTime] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
+  const [lastActionTime, setLastActionTime] = useState(null);
+  const [error, setError] = useState("");
 
-  // Check status on load
   const fetchStatus = async () => {
     try {
-      const res = await api.get("/employee/status");
-      setStatus(res.data.status); // "Clocked In" or "Clocked Out"
-      if (res.data.startTime) setLastTime(res.data.startTime);
+      const res = await api.get("/api/employee/status");
+      // ✅ FIX: Matches Backend (clockIn)
+      setStatus(res.data.isClockedIn ? "Clocked In" : "Clocked Out");
+      setLastActionTime(res.data.clockIn);
     } catch (err) {
       console.error(err);
-      setStatus("Unknown");
+      setStatus("Error loading status");
     }
   };
 
   useEffect(() => { fetchStatus(); }, []);
 
-  const handleClock = async (endpoint) => {
-    setLoading(true);
-    setMessage("");
+  const handleClockIn = async () => {
+    setError("");
     try {
-      await api.post(`/employee/${endpoint}`);
-      await fetchStatus(); // Refresh status after action
-      setMessage(endpoint === "clockin" ? "Successfully Clocked In!" : "Successfully Clocked Out!");
+      const res = await api.post("/api/employee/clockin");
+      setStatus("Clocked In");
+      // ✅ FIX: Matches Backend DTO
+      setLastActionTime(res.data.clockIn);
     } catch (err) {
-      const msg = err.response?.data?.message || "Action failed.";
-      setMessage(msg);
-    } finally {
-      setLoading(false);
+      setError(err.response?.data?.message || "Failed to clock in");
     }
   };
 
-  const isClockedIn = status === "Clocked In";
+  const handleClockOut = async () => {
+    setError("");
+    try {
+      const res = await api.post("/api/employee/clockout");
+      setStatus("Clocked Out");
+      // ✅ FIX: Matches Backend DTO
+      setLastActionTime(res.data.clockOut);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to clock out");
+    }
+  };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] p-6">
-      <div className="bg-white p-8 rounded-2xl shadow-xl max-w-sm w-full text-center border border-slate-100">
-        <h1 className="text-3xl font-bold text-slate-800 mb-2">Time Clock</h1>
-        
-        {/* Status Pill */}
-        <div className={`inline-block px-4 py-1 rounded-full text-sm font-bold mb-6 ${
-          isClockedIn ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-500"
+    <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-xl shadow-md text-center">
+      <h1 className="text-2xl font-bold mb-4 text-slate-800">Time Clock</h1>
+
+      <div className={`text-lg font-semibold mb-6 py-2 px-4 rounded-lg inline-block ${status === "Clocked In" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"
         }`}>
-          {status}
-        </div>
+        {status}
+      </div>
 
-        {/* Time Display */}
-        {isClockedIn && lastTime && (
-          <div className="mb-8">
-            <p className="text-xs text-slate-400 uppercase tracking-widest">Started At</p>
-            <p className="text-2xl font-mono text-slate-700">
-              {new Date(lastTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-            </p>
-          </div>
-        )}
+      {lastActionTime && (
+        <p className="text-sm text-slate-500 mb-6">
+          Last Action: <span className="font-mono">{new Date(lastActionTime).toLocaleString()}</span>
+        </p>
+      )}
 
-        {/* Action Button */}
-        {status !== "Loading..." && (
-          <button 
-            onClick={() => handleClock(isClockedIn ? "clockout" : "clockin")}
-            disabled={loading}
-            className={`w-full py-4 rounded-xl font-bold text-white text-lg shadow-lg transition-transform active:scale-95 ${
-              isClockedIn 
-                ? "bg-rose-500 hover:bg-rose-600 shadow-rose-200" 
-                : "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200"
-            }`}
-          >
-            {loading ? "Processing..." : (isClockedIn ? "Clock Out" : "Clock In")}
-          </button>
-        )}
+      {error && <p className="text-red-500 text-sm mb-4 bg-red-50 p-2 rounded">{error}</p>}
 
-        {message && (
-          <p className="mt-4 text-sm font-medium text-slate-600 bg-slate-50 p-2 rounded">
-            {message}
-          </p>
-        )}
+      <div className="flex gap-4 justify-center">
+        <button
+          onClick={handleClockIn}
+          disabled={status === "Clocked In"}
+          className="bg-emerald-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-emerald-200"
+        >
+          Clock In
+        </button>
+        <button
+          onClick={handleClockOut}
+          disabled={status === "Clocked Out"}
+          className="bg-rose-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-rose-200"
+        >
+          Clock Out
+        </button>
       </div>
     </div>
   );

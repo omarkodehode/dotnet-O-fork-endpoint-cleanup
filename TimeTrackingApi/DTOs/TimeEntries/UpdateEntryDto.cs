@@ -1,3 +1,5 @@
+using System;
+
 namespace TimeTrackingApi.DTOs.TimeEntries
 {
     public class UpdateEntryDto

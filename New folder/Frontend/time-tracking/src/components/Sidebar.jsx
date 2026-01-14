@@ -14,86 +14,104 @@ export default function Sidebar() {
   };
 
   const NavItem = ({ to, icon, label }) => {
-    // Active if exact match OR starts with path (excluding generic dashboards)
-    const isActive = location.pathname === to ||
-      (location.pathname.startsWith(to) && to !== "/admin/dashboard" && to !== "/employee/dashboard" && to !== "/manager/dashboard");
+    // Check for active state
+    // Exclude generic dashboard roots to prevent multiple active highlights
+    const isActive = location.pathname === to || 
+      (location.pathname.startsWith(to) && 
+       to !== "/manager" && 
+       to !== "/admin/dashboard" && 
+       to !== "/employee/dashboard");
 
     return (
       <Link
         to={to}
-        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group mb-1 ${isActive
-            ? "bg-indigo-600 text-white shadow-lg shadow-indigo-900/20 font-medium"
-            : "text-slate-400 hover:bg-slate-800 hover:text-white"
-          }`}
+        // ✅ OLD DESIGN STYLES: White bg, Blue active state, Gray text
+        className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors mb-1 ${
+          isActive
+            ? "bg-blue-50 text-blue-600 font-medium" 
+            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+        }`}
       >
-        <span className="text-lg opacity-80">{icon}</span>
+        <span className="text-xl">{icon}</span>
         <span className="text-sm">{label}</span>
       </Link>
     );
   };
 
   return (
-    <aside className="w-64 bg-slate-900 text-white flex flex-col h-screen fixed left-0 top-0 z-30 border-r border-slate-800">
-      {/* Brand */}
-      <div className="p-6 flex items-center gap-3">
-        <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/30">
-          T
-        </div>
-        <h1 className="text-lg font-bold tracking-tight text-white">
-          Time<span className="text-indigo-400">Track</span>
-        </h1>
+    <aside className="w-64 bg-white shadow-md flex flex-col h-screen sticky top-0 border-r border-gray-200">
+      
+      {/* Brand Header */}
+      <div className="p-6 border-b border-gray-100">
+        <h1 className="text-xl font-bold text-blue-600">HR System</h1>
+        <p className="text-sm text-gray-500 mt-1 capitalize">
+          Welcome, {user?.username || userRole}
+        </p>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 px-4 py-4 space-y-6 overflow-y-auto">
+      {/* Navigation Links */}
+      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
 
-        {/* EMPLOYEES MENU */}
+        {/* --- EMPLOYEE LINKS --- */}
         {userRole === "employee" && (
-          <div>
-            <div className="px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">My Workspace</div>
-            <NavItem to="/employee/dashboard" icon="📊" label="Dashboard" />
-            <NavItem to="/employee/clock-in-out" icon="⏱" label="Time Clock" />
+          <>
+            <div className="px-4 mt-2 mb-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Workspace</div>
+            <NavItem to="/employee/dashboard" icon="🏠" label="Dashboard" />
+            <NavItem to="/employee/clock-in-out" icon="⏱️" label="Time Clock" />
             <NavItem to="/employee/absences" icon="📅" label="My Absences" />
-          </div>
+          </>
         )}
 
-        {/* MANAGER MENU (Visible to Manager & Admin) */}
-        {(userRole === "manager" || userRole === "admin") && (
-          <div>
-            <div className="px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Management</div>
-            <NavItem to="/admin/employees" icon="👥" label="Employees" />
-            <NavItem to="/admin/departments" icon="🏢" label="Departments" />
-            <NavItem to="/admin/absences" icon="📅" label="All Absences" />
-          </div>
+        {/* --- MANAGER LINKS (Fixed Logic) --- */}
+        {userRole === "manager" && (
+          <>
+            <div className="px-4 mt-2 mb-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Manager Panel</div>
+            <NavItem to="/manager" icon="📊" label="Review Hours" />
+            <NavItem to="/manager/approvals" icon="✅" label="Approve Absences" />
+            <NavItem to="/manager/team" icon="👥" label="My Team" />
+            <NavItem to="/manager/record-absence" icon="📝" label="Record Absence" />
+            <NavItem to="/manager/payroll" icon="💰" label="Payroll Export" />
+
+            <div className="px-4 mt-6 mb-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Personal</div>
+            <NavItem to="/employee/clock-in-out" icon="⏱️" label="Clock In/Out" />
+            <NavItem to="/employee/absences" icon="📅" label="My Absences" />
+          </>
         )}
 
-        {/* ADMIN MENU */}
+        {/* --- ADMIN ONLY LINKS --- */}
         {userRole === "admin" && (
-          <div>
-            <div className="px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Admin Panel</div>
-            <NavItem to="/admin/dashboard" icon="📊" label="Overview" />
-            <NavItem to="/admin/payroll" icon="💰" label="Payroll" />
-            <NavItem to="/admin/logs" icon="📜" label="System Logs" />
-          </div>
+          <>
+             <div className="px-4 mt-6 mb-2 text-xs font-bold text-gray-400 uppercase tracking-wider">System</div>
+             <NavItem to="/admin/dashboard" icon="📊" label="Overview" />
+             <NavItem to="/admin/employees" icon="👥" label="All Employees" />
+             <NavItem to="/admin/departments" icon="🏢" label="Departments" />
+             <NavItem to="/admin/absences" icon="📅" label="All Absences" />
+             <NavItem to="/admin/payroll" icon="💰" label="Payroll" />
+             <NavItem to="/admin/logs" icon="📜" label="System Logs" />
+          </>
         )}
       </nav>
 
-      {/* User Profile & Logout */}
-      <div className="p-4 border-t border-slate-800 bg-slate-900/50">
-        <div className="flex items-center gap-3 mb-3 px-2">
-          <div className="w-9 h-9 rounded-full bg-slate-700 border border-slate-600 flex items-center justify-center text-xs font-bold text-slate-300">
-            {user?.username?.[0]?.toUpperCase() || "U"}
-          </div>
-          <div className="overflow-hidden">
-            <p className="font-medium text-sm text-white truncate">{user?.username || "User"}</p>
-            <p className="text-xs text-slate-500 capitalize truncate">{user?.role || "Guest"}</p>
-          </div>
-        </div>
+      {/* Bottom Actions */}
+      <div className="p-4 border-t border-gray-100 space-y-2">
+        <Link
+          to="/change-password"
+          className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+            location.pathname === "/change-password"
+               ? "bg-blue-50 text-blue-600" 
+               : "text-gray-600 hover:bg-gray-50"
+          }`}
+        >
+          <span>🔒</span> 
+          <span className="text-sm">Change Password</span>
+        </Link>
+
         <button
           onClick={handleLogout}
-          className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white py-2 rounded-lg text-xs font-medium transition-colors border border-slate-700"
+          className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-left"
         >
-          Sign Out
+          <span>🚪</span> 
+          <span className="text-sm font-medium">Logout</span>
         </button>
       </div>
     </aside>

@@ -23,7 +23,6 @@ const employeeApi = {
   },
 
   // ================= EMPLOYEE SELF-SERVICE =================
-  // These connect to the EmployeeAreaEndpoints we built (/employee/...)
   
   getStatus: async () => {
     const response = await api.get("/api/employee/status");
@@ -49,9 +48,7 @@ const employeeApi = {
     const response = await api.get("/api/employee/absences");
     return response.data;
   },
-  
 
-  // For the correction feature (PUT /time-entries/{id})
   updateTimeEntry: async (id, data) => {
     const response = await api.put(`/api/employee/time-entries/${id}`, data);
     return response.data;

@@ -1,3 +1,4 @@
+using System;
 using Microsoft.AspNetCore.Mvc;
 using TimeTrackingApi.Data;
 using TimeTrackingApi.Models;
@@ -22,10 +23,10 @@ namespace TimeTrackingApi.Endpoints
             });
 
             // POST /payroll/generate - Generate payroll for a period
-            group.MapPost("/generate", async (AppDbContext db) =>
+            group.MapPost("/generate", async ([FromBody] PayrollGenerateRequest req, AppDbContext db) =>
             {
-                var start = DateTime.UtcNow.AddDays(-30);
-                var end = DateTime.UtcNow;
+                var start = req.StartDate.ToUniversalTime();
+                var end = req.EndDate.ToUniversalTime();
 
                 var employees = await db.Employees
                     .Include(e => e.TimeEntries)
@@ -62,5 +63,11 @@ namespace TimeTrackingApi.Endpoints
                 return Results.Ok(new { message = "Payroll generated successfully" });
             });
         }
+    }
+
+    public class PayrollGenerateRequest
+    {
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
     }
 }

@@ -1,10 +1,10 @@
 using System.Text.Json.Serialization;
 
-namespace TimeTrackingApi.DTOs.Employee
+namespace TimeTrackingApi.DTOs
 {
     public class UpdateEmployeeDto
     {
-        [JsonPropertyName("name")]
+        [JsonPropertyName("fullName")]
         public string FullName { get; set; } = string.Empty;
 
         [JsonPropertyName("position")]
@@ -21,7 +21,8 @@ namespace TimeTrackingApi.DTOs.Employee
 
         [JsonPropertyName("vacationDaysBalance")]
         public int VacationDaysBalance { get; set; }
-        
-        //add password
+
+        [JsonPropertyName("password")]
+        public string? Password { get; set; }
     }
 }

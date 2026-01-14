@@ -15,7 +15,6 @@ namespace TimeTrackingApi.Data
         public DbSet<Absence> Absences { get; set; } = null!;
         public DbSet<Department> Departments {get;set;} = null!;
         
-        // ✅ FIX: Renamed from 'Payrolls' to 'Payroll' to match your Endpoint code
         public DbSet<Payroll> Payroll { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

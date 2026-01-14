@@ -1,18 +1,21 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import employeeApi from "../../api/employeeApi"; 
+import employeeApi from "../../api/employeeApi";
 import departmentApi from "../../api/departmentApi"; // ✅ FIXED: Default import
 
 export default function CreateEmployee() {
   const navigate = useNavigate();
   const [departments, setDepartments] = useState([]);
-  
+
   const [form, setForm] = useState({
     name: "",
     username: "",
     password: "",
-    department: "", 
+    department: "",
     role: "employee",
+    position: "",
+    hourlyRate: 0,
+    vacationDaysBalance: 15
   });
   const [error, setError] = useState("");
 
@@ -41,7 +44,7 @@ export default function CreateEmployee() {
     <div className="bg-white p-6 rounded shadow max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">Create Employee</h1>
       {error && <p className="text-red-600 mb-4 bg-red-50 p-2 rounded">{error}</p>}
-      
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
@@ -60,10 +63,10 @@ export default function CreateEmployee() {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
-          <select 
-            name="department" 
-            value={form.department} 
-            onChange={handleChange} 
+          <select
+            name="department"
+            value={form.department}
+            onChange={handleChange}
             className="w-full p-2 border rounded"
             required
           >
@@ -81,6 +84,21 @@ export default function CreateEmployee() {
             <option value="manager">Manager</option> {/* ✅ Added Manager */}
             <option value="admin">Admin</option>
           </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Position / Title</label>
+          <input name="position" type="text" value={form.position} onChange={handleChange} className="w-full p-2 border rounded" />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Hourly Rate</label>
+          <input name="hourlyRate" type="number" step="0.01" value={form.hourlyRate} onChange={handleChange} className="w-full p-2 border rounded" />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Vacation Days Balance</label>
+          <input name="vacationDaysBalance" type="number" value={form.vacationDaysBalance} onChange={handleChange} className="w-full p-2 border rounded" />
         </div>
 
         <div className="flex gap-3 pt-4">

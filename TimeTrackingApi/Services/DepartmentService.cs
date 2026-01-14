@@ -40,8 +40,19 @@ namespace TimeTrackingApi.Services
 
         public async Task<bool> Delete(int id)
         {
-            var dept = await _db.Departments.FindAsync(id);
+            var dept = await _db.Departments
+                .Include(d => d.Employees)
+                .FirstOrDefaultAsync(d => d.Id == id);
+                
             if (dept == null) return false;
+
+            if (dept.Employees.Any())
+            {
+                foreach (var emp in dept.Employees)
+                {
+                    emp.DepartmentId = null;
+                }
+            }
 
             _db.Departments.Remove(dept);
             await _db.SaveChangesAsync();

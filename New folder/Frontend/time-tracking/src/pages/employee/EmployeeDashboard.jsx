@@ -1,77 +1,88 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthProvider";
-import timeEntryApi from "../../api/timeEntryApi";
+import api from "../../api/apiClient";
 
 export default function EmployeeDashboard() {
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  const [flexBalance, setFlexBalance] = useState(0);
+  const [history, setHistory] = useState([]);
+  const [balance, setBalance] = useState(0);
 
   useEffect(() => {
-    // Fetch Flex Balance on load
-    timeEntryApi.getFlexBalance()
-      .then(res => setFlexBalance(res.data.flexHours))
-      .catch(err => console.error("Failed to load flex balance", err));
+    fetchHistory();
+    fetchBalance();
   }, []);
 
-  const ActionCard = ({ title, desc, icon, color, onClick, extraInfo }) => (
-    <button 
-      onClick={onClick}
-      className="flex flex-col items-center justify-center p-8 bg-white rounded-2xl shadow-sm border border-slate-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group w-full text-center h-64 relative overflow-hidden"
-    >
-      <div className={`absolute top-0 left-0 w-full h-2 ${color}`}></div>
-      <div 
-        className={`w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform ${color.replace('bg-', 'text-').replace('600', '600')}`} 
-        style={{ backgroundColor: 'rgba(0,0,0,0.05)' }}
-      >
-        {icon}
-      </div>
-      <h3 className="text-xl font-bold text-slate-900">{title}</h3>
-      <p className="text-slate-500 mt-2 text-sm">{desc}</p>
-      {extraInfo && <div className="mt-4">{extraInfo}</div>}
-    </button>
-  );
+  const fetchHistory = async () => {
+    try {
+      const res = await api.get("/api/employee/history");
+      setHistory(res.data);
+    } catch (err) { console.error("Failed to load history"); }
+  };
+
+  const fetchBalance = async () => {
+    try {
+      const res = await api.get("/api/employee/flex-balance");
+      setBalance(res.data.flexHours);
+    } catch (err) { console.error("Failed to load balance"); }
+  };
 
   return (
-    <div className="max-w-5xl mx-auto py-12 px-6">
-      <div className="text-center mb-16">
-        <h1 className="text-4xl font-bold text-slate-900 mb-4">Welcome back, {user?.username || "Employee"}!</h1>
-        <p className="text-lg text-slate-500">Here is your overview.</p>
+    <div className="p-6 max-w-5xl mx-auto">
+      <h1 className="text-3xl font-bold text-slate-800 mb-8">Dashboard</h1>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+          <h3 className="text-slate-500 text-sm font-bold uppercase mb-2">Flex Balance</h3>
+          <p className={`text-4xl font-bold ${balance >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+            {balance > 0 ? '+' : ''}{balance}h
+          </p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-4">
-        {/* Time Clock */}
-        <ActionCard 
-          title="Time Clock" 
-          desc="Clock in/out & view history." 
-          icon="⏱" 
-          color="bg-indigo-600"
-          onClick={() => navigate("/employee/clock-in-out")}
-        />
-
-        {/* Absences */}
-        <ActionCard 
-          title="Absences" 
-          desc="Request leave & view status." 
-          icon="📅" 
-          color="bg-emerald-600"
-          onClick={() => navigate("/employee/absences")}
-        />
-
-        {/* ✅ NEW: Flex Balance Card */}
-        <ActionCard 
-          title="Flex Balance" 
-          desc="Your current +/- hours." 
-          icon="⚖️" 
-          color={flexBalance >= 0 ? "bg-blue-600" : "bg-amber-500"}
-          onClick={() => {}} // No navigation needed
-          extraInfo={
-            <span className={`text-2xl font-mono font-bold ${flexBalance >= 0 ? "text-blue-600" : "text-amber-600"}`}>
-              {flexBalance > 0 ? "+" : ""}{flexBalance}h
-            </span>
-          }
-        />
+      {/* History Table */}
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="p-6 border-b border-slate-100">
+          <h2 className="text-xl font-bold text-slate-800">Recent Activity</h2>
+        </div>
+        <table className="w-full text-left">
+          <thead className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
+            <tr>
+              <th className="p-4">Date</th>
+              <th className="p-4">Clock In</th>
+              <th className="p-4">Clock Out</th>
+              <th className="p-4">Duration</th>
+              <th className="p-4 text-right">Status</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {history.map(t => (
+              <tr key={t.id} className="hover:bg-slate-50">
+                {/* ✅ FIX: Using clockIn / clockOut */}
+                <td className="p-4 font-medium text-slate-700">
+                  {new Date(t.clockIn).toLocaleDateString()}
+                </td>
+                <td className="p-4 text-slate-500">
+                  {new Date(t.clockIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </td>
+                <td className="p-4 text-slate-500">
+                  {t.clockOut
+                    ? new Date(t.clockOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    : <span className="text-emerald-600 font-bold text-xs">ACTIVE</span>}
+                </td>
+                <td className="p-4 font-mono text-sm">
+                  {t.duration ? t.duration.toFixed(2) + 'h' : '-'}
+                </td>
+                <td className="p-4 text-right">
+                  {t.isApproved
+                    ? <span className="px-2 py-1 bg-emerald-50 text-emerald-700 rounded text-xs font-bold border border-emerald-100">LOCKED</span>
+                    : <span className="px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs font-bold border border-slate-200">OPEN</span>}
+                </td>
+              </tr>
+            ))}
+            {history.length === 0 && (
+              <tr><td colSpan="5" className="p-8 text-center text-slate-400 italic">No time entries recorded yet.</td></tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );

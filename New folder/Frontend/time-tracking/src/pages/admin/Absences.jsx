@@ -1,122 +1,75 @@
 import { useEffect, useState } from "react";
-import absenceApi from "../../api/absenceApi";
 import { useNavigate } from "react-router-dom";
+import api from "../../api/apiClient"; // Assuming you have a general API client or adminApi
 
 export default function Absences() {
   const navigate = useNavigate();
   const [absences, setAbsences] = useState([]);
-  const [error, setError] = useState("");
-
-  const fetchAbsences = async () => {
-    try {
-      const res = await absenceApi.getAbsences();
-      setAbsences(res.data || []);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to load absences.");
-    }
-  };
 
   useEffect(() => {
     fetchAbsences();
   }, []);
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this absence?")) return;
+  const fetchAbsences = async () => {
     try {
-      await absenceApi.deleteAbsence(id);
-      setAbsences(prev => prev.filter(a => a.id !== id));
-    } catch {
-      setError("Failed to delete absence.");
-    }
+      const res = await api.get("/api/absences"); // Admin endpoint to get all
+      setAbsences(res.data);
+    } catch (err) { console.error(err); }
   };
 
-  // Helper to format dates cleanly
-  const formatDate = (dateString) => {
-    if (!dateString || dateString.startsWith("0001")) return "N/A";
-    return new Date(dateString).toLocaleDateString();
+  const handleApprove = async (id, approved) => {
+    try {
+      await api.post(`/api/manager/absences/${id}/approve?approved=${approved}`);
+      fetchAbsences();
+    } catch (err) { alert("Failed"); }
   };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-800">Absences</h1>
+        <h1 className="text-2xl font-bold text-slate-800">All Absences</h1>
         <button
           onClick={() => navigate("/admin/absences/create")}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-indigo-700 flex items-center gap-2 shadow-lg shadow-indigo-600/20"
         >
-          Add Absence
+          <span>➕</span> Add Absence
         </button>
       </div>
 
-      {error && <p className="text-red-600 bg-red-50 p-2 rounded">{error}</p>}
-
-      <div className="overflow-x-auto bg-white rounded shadow">
-        <table className="min-w-full text-left">
-          <thead className="bg-gray-100">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <table className="w-full text-left">
+          <thead className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
             <tr>
-              {/* Updated Headers to match data structure */}
-              {["ID", "Employee", "Start Date", "End Date", "Type", "Approved", "Actions"].map((h) => (
-                <th key={h} className="px-4 py-2 border font-semibold text-gray-700">{h}</th>
-              ))}
+              <th className="p-4">Employee</th>
+              <th className="p-4">Dates</th>
+              <th className="p-4">Type</th>
+              <th className="p-4">Description</th>
+              <th className="p-4 text-right">Status</th>
             </tr>
           </thead>
-          <tbody>
-            {absences && absences.length > 0 ? absences.map(a => (
-              <tr key={a.id} className="border-b hover:bg-gray-50 transition">
-                <td className="px-4 py-2">{a.id}</td>
-                
-                {/* Check your backend response for this field! 
-                   It might be `a.employee?.firstName` or just `a.employeeName` 
-                */}
-                <td className="px-4 py-2 font-medium">
-                  {a.employeeName || (a.employee ? `${a.employee.firstName} ${a.employee.lastName}` : "Unknown")}
+          <tbody className="divide-y divide-slate-100">
+            {absences.map(a => (
+              <tr key={a.id} className="hover:bg-slate-50">
+                <td className="p-4 font-bold text-slate-700">{a.employee?.fullName || 'Unknown'}</td>
+                {/* ✅ FIX: Using startDate / endDate */}
+                <td className="p-4 text-sm text-slate-600">
+                  {new Date(a.startDate).toLocaleDateString()} - {new Date(a.endDate).toLocaleDateString()}
                 </td>
-
-                {/* ✅ Fixed: Changed a.date to a.startDate */}
-                <td className="px-4 py-2">{formatDate(a.startDate)}</td>
-                
-                {/* Added End Date column */}
-                <td className="px-4 py-2">{formatDate(a.endDate)}</td>
-
-                {/* ✅ Fixed: Changed a.reason to a.type */}
-                <td className="px-4 py-2">
-                  <span className="px-2 py-1 bg-gray-100 rounded text-sm">
-                    {a.type || "Other"}
-                  </span>
+                <td className="p-4">
+                  <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs font-bold uppercase">{a.type}</span>
                 </td>
-
-                {/* Added Approval Status */}
-                <td className="px-4 py-2">
-                  {a.approved ? (
-                    <span className="text-green-600 font-bold text-sm bg-green-100 px-2 py-1 rounded">Yes</span>
-                  ) : (
-                    <span className="text-yellow-600 font-bold text-sm bg-yellow-100 px-2 py-1 rounded">Pending</span>
-                  )}
-                </td>
-
-                <td className="px-4 py-2 flex gap-2">
-                  <button
-                    onClick={() => navigate(`/admin/absences/edit/${a.id}`)}
-                    className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 text-sm"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(a.id)}
-                    className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 text-sm"
-                  >
-                    Delete
-                  </button>
+                <td className="p-4 text-sm text-slate-500 italic">{a.description || '-'}</td>
+                <td className="p-4 text-right">
+                  {a.approved
+                    ? <span className="text-emerald-600 font-bold text-xs bg-emerald-50 px-2 py-1 rounded border border-emerald-100">APPROVED</span>
+                    : <div className="flex justify-end gap-2">
+                      <button onClick={() => handleApprove(a.id, true)} className="text-xs bg-emerald-600 text-white px-3 py-1 rounded hover:bg-emerald-700">Approve</button>
+                      <button onClick={() => handleApprove(a.id, false)} className="text-xs bg-rose-600 text-white px-3 py-1 rounded hover:bg-rose-700">Reject</button>
+                    </div>
+                  }
                 </td>
               </tr>
-            )) : (
-              <tr>
-                <td colSpan="7" className="px-4 py-8 text-center text-gray-500">
-                  No absences found.
-                </td>
-              </tr>
-            )}
+            ))}
           </tbody>
         </table>
       </div>

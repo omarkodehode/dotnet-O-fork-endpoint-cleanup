@@ -63,6 +63,9 @@ builder.Services.AddScoped<EmployeeService>();
 builder.Services.AddScoped<TimeEntryService>();
 builder.Services.AddScoped<AbsenceService>();
 builder.Services.AddScoped<DepartmentService>();
+// ✅ FIX: Add PayrollService so it can be injected into ManagerEndpoints
+builder.Services.AddScoped<PayrollService>(); 
+
 
 // --- Authorization ---
 builder.Services.AddAuthorization(options =>
