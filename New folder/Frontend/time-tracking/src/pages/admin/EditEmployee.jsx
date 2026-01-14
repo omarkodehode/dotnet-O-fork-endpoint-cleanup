@@ -1,26 +1,25 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import employeeApi from "../../api/employeeApi";
-import { getDepartments } from "../../api/departmentApi"; // ✅ Import
+import departmentApi from "../../api/departmentApi"; // ✅ FIXED: Default import
 
 export default function EditEmployee() {
   const { id } = useParams();
   const navigate = useNavigate();
-  
+
   const [departments, setDepartments] = useState([]);
   const [employees, setEmployees] = useState([]); // For Manager dropdown
-  
-  const [form, setForm] = useState({ 
-    fullName: "", 
-    position: "", 
+
+  const [form, setForm] = useState({
+    fullName: "",
+    position: "",
     departmentId: "", // ✅ Add ID
     managerId: ""     // ✅ Add Manager
   });
   const [error, setError] = useState("");
 
   useEffect(() => {
-    // 1. Load Departments
-    getDepartments().then(setDepartments).catch(console.error);
+    departmentApi.getDepartments().then(setDepartments).catch(console.error);
 
     // 2. Load All Employees (to select a manager)
     employeeApi.getAll().then(setEmployees).catch(console.error);
@@ -47,7 +46,7 @@ export default function EditEmployee() {
         departmentId: form.departmentId ? parseInt(form.departmentId) : null,
         managerId: form.managerId ? parseInt(form.managerId) : null
       };
-      
+
       await employeeApi.update(id, payload);
       navigate("/admin/employees");
     } catch (err) {
@@ -69,7 +68,7 @@ export default function EditEmployee() {
             type="text"
             className="w-full p-2 border rounded"
             value={form.fullName}
-            onChange={e => setForm({...form, fullName: e.target.value})}
+            onChange={e => setForm({ ...form, fullName: e.target.value })}
             required
           />
         </div>
@@ -81,7 +80,7 @@ export default function EditEmployee() {
             type="text"
             className="w-full p-2 border rounded"
             value={form.position}
-            onChange={e => setForm({...form, position: e.target.value})}
+            onChange={e => setForm({ ...form, position: e.target.value })}
           />
         </div>
 
@@ -91,7 +90,7 @@ export default function EditEmployee() {
           <select
             className="w-full p-2 border rounded"
             value={form.departmentId}
-            onChange={e => setForm({...form, departmentId: e.target.value})}
+            onChange={e => setForm({ ...form, departmentId: e.target.value })}
           >
             <option value="">-- No Department --</option>
             {departments.map(dept => (
@@ -106,14 +105,14 @@ export default function EditEmployee() {
           <select
             className="w-full p-2 border rounded"
             value={form.managerId}
-            onChange={e => setForm({...form, managerId: e.target.value})}
+            onChange={e => setForm({ ...form, managerId: e.target.value })}
           >
             <option value="">-- No Manager --</option>
             {employees
               .filter(emp => emp.id !== parseInt(id)) // Don't let them be their own manager
               .map(emp => (
                 <option key={emp.id} value={emp.id}>{emp.fullName}</option>
-            ))}
+              ))}
           </select>
         </div>
 

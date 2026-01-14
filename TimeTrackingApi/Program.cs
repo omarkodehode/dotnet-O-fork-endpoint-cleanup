@@ -3,11 +3,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims; 
 using System.Text;
+using System.Text.Json.Serialization;
 using TimeTrackingApi.Data;
 using TimeTrackingApi.Services;
 using TimeTrackingApi.Endpoints;
 using TimeTrackingApi.Utils;
-using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,25 +25,18 @@ builder.Services.AddCors(options =>
               .AllowCredentials();
     });
 });
-builder.Services.AddControllers()
-    .AddJsonOptions(options =>
-    {
-        // This converter allows strings to be parsed as Enums
-        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-    });
+
 // --- Database ---
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// ✅ REPLACE THIS ENTIRE BLOCK
+// --- JSON Configuration (Minimal APIs) ---
 builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options =>
 {
-    // Fix circular references
     options.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
-    
-    // ✅ FIX: Add this line to allow Strings ("Vacation") -> Enum conversion in Minimal APIs
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
 });
+
 // --- JWT Authentication ---
 var jwtKey = builder.Configuration["Jwt:Key"] ?? "default_dev_key_12345";
 builder.Services.AddSingleton(new JwtService(jwtKey));
@@ -59,8 +52,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
-            
-            // Map Role correctly
             RoleClaimType = ClaimTypes.Role,
             NameClaimType = ClaimTypes.Name
         };
@@ -77,8 +68,8 @@ builder.Services.AddScoped<DepartmentService>();
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("AdminOnly", policy => policy.RequireRole("admin", "Admin"));
-options.AddPolicy("EmployeeOnly", policy => policy.RequireRole("employee", "Employee", "admin", "Admin", "Manager","manager"));
-options.AddPolicy("ManagerOnly", policy => policy.RequireRole("Manager", "Admin", "admin","manager"));
+    options.AddPolicy("ManagerOnly", policy => policy.RequireRole("Manager", "manager", "Admin", "admin"));
+    options.AddPolicy("EmployeeOnly", policy => policy.RequireRole("employee", "Employee", "Admin", "admin", "Manager", "manager"));
 });
 
 var app = builder.Build();
@@ -102,10 +93,11 @@ app.MapEmployeeEndpoints();
 app.MapAdminTimeEntryEndpoints(); 
 app.MapAbsenceEndpoints();
 app.MapEmployeeAreaEndpoints();
-app.MapDashboard();
+app.MapDashboardEndpoints(); // Renamed to match standard convention if extension method was MapDashboard
 app.MapLogEndpoints(); 
 app.MapDepartmentEndpoints();
 app.MapManagerEndpoints();
+
 
 app.MapGet("/", () => "Time Tracking API is running! 🚀");
 

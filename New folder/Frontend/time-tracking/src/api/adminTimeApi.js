@@ -8,6 +8,11 @@ const adminTimeApi = {
   clockOutUser: (employeeId) => api.post(`/admin/time/clockout/${employeeId}`),
 
   getUserHistory: (userId) => api.get(`/admin/time/history/${userId}`),
+
+  // ✅ NEW: Global Export
+  exportGlobalPayroll: (year, month) => api.get(`/admin/time/export-payroll?year=${year}&month=${month}`, {
+    responseType: 'blob',
+  }),
 };
 
 export default adminTimeApi;

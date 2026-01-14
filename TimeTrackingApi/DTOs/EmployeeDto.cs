@@ -1,11 +1,18 @@
-namespace TimeTrackingApi.DTOs
+using System.Text.Json.Serialization;
+
+namespace TimeTrackingApi.DTOs.Employee
 {
     public class EmployeeDto
     {
         public int Id { get; set; }
-        public int? UserId { get; set; }
-        public string FullName { get; set; } = string.Empty;
-        public string? Position { get; set; }
-        public DateTime? HireDate { get; set; }
+
+        [JsonPropertyName("name")]
+        public string Name { get; set; } = string.Empty;
+
+        [JsonPropertyName("department")]
+        public string Department { get; set; } = string.Empty;
+
+        [JsonPropertyName("role")]
+        public string Role { get; set; } = string.Empty;
     }
 }

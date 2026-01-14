@@ -21,9 +21,7 @@ namespace TimeTrackingApi.Endpoints
                         Id = t.Id,
                         Type = "TimeEntry",
                         Employee = t.Employee != null ? t.Employee.FullName : "Unknown",
-                        // ✅ FIX: Use 'ClockIn' instead of 'StartTime'
                         Date = t.ClockIn,
-                        // ✅ FIX: Use 'ClockOut' instead of 'EndTime'
                         Details = t.ClockOut.HasValue 
                                   ? $"Worked: {Math.Round((t.ClockOut.Value - t.ClockIn).TotalHours, 2)} hrs" 
                                   : "Currently Clocked In"
@@ -37,8 +35,8 @@ namespace TimeTrackingApi.Endpoints
                         Id = a.Id,
                         Type = "Absence",
                         Employee = a.Employee != null ? a.Employee.FullName : "Unknown",
-                       Date = a.StartDate,
-                       Details = $"{a.Type}: {a.StartDate:MM/dd} - {a.EndDate:MM/dd}"
+                        Date = a.StartDate,
+                        Details = $"{a.Type}: {a.StartDate:MM/dd} - {a.EndDate:MM/dd}"
                     }).ToListAsync();
 
                 // 3. Merge and Sort

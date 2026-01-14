@@ -1,10 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using TimeTrackingApi.Models;
 using TimeTrackingApi.Services;
-using TimeTrackingApi.DTOs.TimeEntries; // For UpdateEntryDto
-using TimeTrackingApi.DTOs.Absences;    // ✅ REQUIRED: For CreateAbsenceDto
+using TimeTrackingApi.DTOs.TimeEntries; 
+using TimeTrackingApi.DTOs.Absences;
 
 namespace TimeTrackingApi.Endpoints
 {
@@ -14,18 +13,30 @@ namespace TimeTrackingApi.Endpoints
         {
             var group = app.MapGroup("/employee").RequireAuthorization("EmployeeOnly");
 
-            // ==========================================
-            //              TIME CLOCK
-            // ==========================================
-            
+            // Helper function to get UserID
+            int? GetUserId(ClaimsPrincipal user)
+            {
+                var idStr = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                return int.TryParse(idStr, out int id) ? id : null;
+            }
+
+            // ✅ NEW: GET FLEX BALANCE
+            group.MapGet("/flex-balance", async (HttpContext ctx, TimeEntryService service) =>
+            {
+                var userId = GetUserId(ctx.User);
+                if (userId == null) return Results.Unauthorized();
+
+                var balance = await service.GetFlexBalance(userId.Value);
+                return Results.Ok(new { FlexHours = balance });
+            });
+
             // GET STATUS
             group.MapGet("/status", async (HttpContext ctx, TimeEntryService service) =>
             {
-                var userIdStr = ctx.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userIdStr)) return Results.Unauthorized();
+                var userId = GetUserId(ctx.User);
+                if (userId == null) return Results.Unauthorized();
 
-                var userId = int.Parse(userIdStr);
-                var entry = await service.GetCurrentEntry(userId);
+                var entry = await service.GetCurrentEntry(userId.Value);
                 
                 return Results.Ok(new { 
                     status = entry != null ? "Clocked In" : "Clocked Out",
@@ -36,95 +47,96 @@ namespace TimeTrackingApi.Endpoints
             // CLOCK IN
             group.MapPost("/clockin", async (HttpContext ctx, TimeEntryService service) =>
             {
-                var userIdStr = ctx.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userIdStr)) return Results.Unauthorized();
+                var userId = GetUserId(ctx.User);
+                if (userId == null) return Results.Unauthorized();
 
-                var userId = int.Parse(userIdStr);
-                var result = await service.ClockIn(userId);
-
+                var result = await service.ClockIn(userId.Value);
                 if (result == null) return Results.Conflict(new { message = "Already clocked in." });
+                
                 return Results.Ok(new { message = "Clocked In", time = result.ClockIn });
             });
 
             // CLOCK OUT
             group.MapPost("/clockout", async (HttpContext ctx, TimeEntryService service) =>
             {
-                var userIdStr = ctx.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userIdStr)) return Results.Unauthorized();
+                var userId = GetUserId(ctx.User);
+                if (userId == null) return Results.Unauthorized();
 
-                var userId = int.Parse(userIdStr);
-                var result = await service.ClockOut(userId);
-
+                var result = await service.ClockOut(userId.Value);
                 if (result == null) return Results.Conflict(new { message = "Not clocked in." });
+                
                 return Results.Ok(new { message = "Clocked Out", time = result.ClockOut });
             });
 
             // UPDATE TIME ENTRY (Correction)
-            group.MapPut("/time-entries/{id}", async (
-                int id, 
-                [FromBody] UpdateEntryDto dto, 
-                HttpContext ctx, 
-                TimeEntryService service) =>
+            group.MapPut("/time-entries/{id}", async (int id, [FromBody] UpdateEntryDto dto, HttpContext ctx, TimeEntryService service) =>
             {
-                var userIdStr = ctx.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userIdStr)) return Results.Unauthorized();
-                var userId = int.Parse(userIdStr);
+                var userId = GetUserId(ctx.User);
+                if (userId == null) return Results.Unauthorized();
 
                 try
                 {
-                    var success = await service.UpdateEntry(userId, id, dto.ClockIn, dto.ClockOut);
-                    
+                    var success = await service.UpdateEntry(userId.Value, id, dto.ClockIn, dto.ClockOut);
                     if (!success) return Results.NotFound("Entry not found.");
                     
                     return Results.Ok(new { message = "Entry updated successfully." });
                 }
                 catch (InvalidOperationException ex)
                 {
-                    // Returns 403 Forbidden if the week is locked
-                    return Results.Problem(detail: ex.Message, statusCode: 403); 
+                    // Returns 400 Bad Request if locked/old
+                    return Results.BadRequest(new { error = ex.Message }); 
+                }
+            });
+
+            // ✅ NEW: DELETE TIME ENTRY
+            group.MapDelete("/time-entries/{id}", async (int id, HttpContext ctx, TimeEntryService service) =>
+            {
+                var userId = GetUserId(ctx.User);
+                if (userId == null) return Results.Unauthorized();
+
+                try
+                {
+                    var success = await service.DeleteEntry(userId.Value, id);
+                    return success ? Results.Ok() : Results.NotFound();
+                }
+                catch (InvalidOperationException ex)
+                {
+                     return Results.BadRequest(new { error = ex.Message });
                 }
             });
 
             // GET HISTORY
-           group.MapGet("/history", async (HttpContext ctx, TimeEntryService service) =>
-{
-    var userIdStr = ctx.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-    if (string.IsNullOrEmpty(userIdStr)) return Results.Unauthorized();
-    var userId = int.Parse(userIdStr);
+            group.MapGet("/history", async (HttpContext ctx, TimeEntryService service) =>
+            {
+                var userId = GetUserId(ctx.User);
+                if (userId == null) return Results.Unauthorized();
 
-    var history = await service.GetHistory(userId);
-    
-    // Map to DTO
-    var dtos = history.Select(t => new 
-    {
-        t.Id,
-        ClockIn = t.ClockIn,
-        ClockOut = t.ClockOut,
-        // Calculate duration in hours if clocked out
-        Duration = t.ClockOut.HasValue ? (t.ClockOut.Value - t.ClockIn).TotalHours : 0
-    });
+                var history = await service.GetHistory(userId.Value);
+                var dtos = history.Select(t => new 
+                {
+                    t.Id,
+                    ClockIn = t.ClockIn,
+                    ClockOut = t.ClockOut,
+                    Duration = t.ClockOut.HasValue ? (t.ClockOut.Value - t.ClockIn).TotalHours : 0,
+                    IsApproved = t.IsApproved // Return approval status
+                });
 
-    return Results.Ok(dtos);
-});
-
-
+                return Results.Ok(dtos);
+            });
 
             // GET My Absences
             group.MapGet("/absences", async (HttpContext ctx, AbsenceService service) =>
             {
-                var userIdStr = ctx.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userIdStr)) return Results.Unauthorized();
+                var userId = GetUserId(ctx.User);
+                if (userId == null) return Results.Unauthorized();
 
-                var userId = int.Parse(userIdStr);
-                var list = await service.GetByEmployee(userId);
-                
-                // Map to DTO with new fields (StartDate, EndDate, Type)
+                var list = await service.GetByEmployee(userId.Value);
                 var dtos = list.Select(a => new 
                 {
                     a.Id,
                     StartDate = a.StartDate,
                     EndDate = a.EndDate,
-                    Type = a.Type.ToString(), // "Vacation", "SickLeave" etc.
+                    Type = a.Type.ToString(),
                     Description = a.Description,
                     a.Approved
                 });
@@ -132,17 +144,13 @@ namespace TimeTrackingApi.Endpoints
                 return Results.Ok(dtos);
             });
 
-            // POST Request Absence (Updated for Periods)
+            // POST Request Absence
             group.MapPost("/absences", async (HttpContext ctx, [FromBody] CreateAbsenceDto dto, AbsenceService service) =>
             {
-                var userIdStr = ctx.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userIdStr)) return Results.Unauthorized();
-
-                var userId = int.Parse(userIdStr);
+                var userId = GetUserId(ctx.User);
+                if (userId == null) return Results.Unauthorized();
                 
-                // Pass DTO to the service
-                var created = await service.Create(userId, dto);
-
+                var created = await service.Create(userId.Value, dto);
                 if (created == null) return Results.Conflict(new { message = "Invalid date range or dates already taken." });
                 
                 return Results.Ok(new { 

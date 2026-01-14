@@ -10,8 +10,7 @@ namespace TimeTrackingApi.Endpoints
     {
         public static void MapEmployeeEndpoints(this IEndpointRouteBuilder app)
         {
-            // Krever at man er Admin for å gjøre endringer her
-            var group = app.MapGroup("/employees").RequireAuthorization("AdminOnly");
+            var group = app.MapGroup("/employees").RequireAuthorization("ManagerOnly");
 
             // GET All
             group.MapGet("", async (EmployeeService service) => 
@@ -24,7 +23,7 @@ namespace TimeTrackingApi.Endpoints
                 return emp is not null ? Results.Ok(emp) : Results.NotFound();
             });
 
-            // CREATE (POST)
+            // CREATE
             group.MapPost("", async ([FromBody] CreateEmployeeDto dto, EmployeeService empService, AuthService authService) =>
             {
                 if (string.IsNullOrEmpty(dto.Username) || string.IsNullOrEmpty(dto.Password))
@@ -32,14 +31,14 @@ namespace TimeTrackingApi.Endpoints
                     return Results.BadRequest(new { message = "Username and Password are required." });
                 }
 
-                // 1. Opprett User (Login)
+                // 1. Create User (Login)
                 var user = await authService.Register(dto.Username, dto.Password, dto.Role);
                 if (user == null)
                 {
                     return Results.Conflict(new { message = "Username already exists." });
                 }
 
-                // 2. Opprett Employee (Profil)
+                // 2. Create Employee (Profile)
                 var newEmployee = new Employee
                 {
                     FullName = dto.Name,
@@ -51,12 +50,12 @@ namespace TimeTrackingApi.Endpoints
                 await empService.Create(newEmployee);
                 
                 return Results.Created($"/employees/{newEmployee.Id}", NewEmployee.MapFrom(newEmployee));
-            });
+            }).RequireAuthorization("AdminOnly");
 
-            // UPDATE (PUT)
-            group.MapPut("/{id}", async (int id, [FromBody] Employee emp, EmployeeService service) =>
+            // UPDATE
+            group.MapPut("/{id}", async (int id, [FromBody] UpdateEmployeeDto dto, EmployeeService service) =>
             {
-                var updated = await service.Update(id, emp);
+                var updated = await service.Update(id, dto);
                 return updated is not null ? Results.Ok(updated) : Results.NotFound();
             });
 
@@ -66,17 +65,15 @@ namespace TimeTrackingApi.Endpoints
                 return await service.Delete(id) ? Results.Ok() : Results.NotFound();
             });
 
-            // ✅ DELETE ALL (Nytt endepunkt)
-            // Kalles via DELETE http://localhost:5000/employees
+            // DELETE ALL
             group.MapDelete("/", async (EmployeeService service) =>
             {
                 await service.DeleteAll();
                 return Results.Ok(new { message = "All employees and linked users have been deleted." });
-            });
+            }).RequireAuthorization("AdminOnly");
         }
     }
 
-    // DTO for å returnere pen data etter opprettelse
     public record NewEmployee(int Id, int UserId, string FullName, string Position, DateTime HireDate)
     {
         public static NewEmployee MapFrom(Employee employee)

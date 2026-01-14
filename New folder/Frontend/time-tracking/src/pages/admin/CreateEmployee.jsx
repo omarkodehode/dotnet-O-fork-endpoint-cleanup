@@ -1,24 +1,26 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import employeeApi from "../../api/employeeApi"; 
-import { getDepartments } from "../../api/departmentApi"; // ✅ Import this
+import departmentApi from "../../api/departmentApi"; // ✅ FIXED: Default import
 
 export default function CreateEmployee() {
   const navigate = useNavigate();
-  const [departments, setDepartments] = useState([]); // ✅ Store departments
+  const [departments, setDepartments] = useState([]);
   
   const [form, setForm] = useState({
     name: "",
     username: "",
     password: "",
-    department: "", // This will now hold the Department NAME (for the backend logic we made)
+    department: "", 
     role: "employee",
   });
   const [error, setError] = useState("");
 
-  // ✅ Load Departments on mount
   useEffect(() => {
-    getDepartments().then(setDepartments).catch(console.error);
+    // ✅ FIXED: Use method from object
+    departmentApi.getDepartments()
+      .then(data => setDepartments(data))
+      .catch(console.error);
   }, []);
 
   const handleChange = (e) =>
@@ -41,25 +43,21 @@ export default function CreateEmployee() {
       {error && <p className="text-red-600 mb-4 bg-red-50 p-2 rounded">{error}</p>}
       
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Full Name */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
           <input name="name" type="text" value={form.name} onChange={handleChange} className="w-full p-2 border rounded" required />
         </div>
 
-        {/* Username */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
           <input name="username" type="text" value={form.username} onChange={handleChange} className="w-full p-2 border rounded" required autoComplete="new-username" />
         </div>
 
-        {/* Password */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
           <input name="password" type="password" value={form.password} onChange={handleChange} className="w-full p-2 border rounded" required autoComplete="new-password" />
         </div>
 
-        {/* ✅ UPDATED: Department Dropdown */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
           <select 
@@ -76,11 +74,11 @@ export default function CreateEmployee() {
           </select>
         </div>
 
-        {/* Role */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
           <select name="role" value={form.role} onChange={handleChange} className="w-full p-2 border rounded">
             <option value="employee">Employee</option>
+            <option value="manager">Manager</option> {/* ✅ Added Manager */}
             <option value="admin">Admin</option>
           </select>
         </div>

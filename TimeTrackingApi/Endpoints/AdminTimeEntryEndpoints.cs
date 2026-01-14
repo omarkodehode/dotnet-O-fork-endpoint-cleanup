@@ -10,7 +10,7 @@ namespace TimeTrackingApi.Endpoints
         {
             var group = app.MapGroup("/admin/time").RequireAuthorization("AdminOnly");
 
-            // GET ALL ACTIVE (Fixes Dashboard Error)
+            // 1. GET ALL ACTIVE (For Admin Dashboard)
             group.MapGet("/active", async (TimeEntryService service) =>
             {
                 var active = await service.GetAllActive();
@@ -27,7 +27,7 @@ namespace TimeTrackingApi.Endpoints
                 return Results.Ok(result);
             });
 
-            // ADMIN CLOCK IN (For User)
+            // 2. ADMIN CLOCK IN (For User)
             group.MapPost("/clockin/{userId}", async (int userId, TimeEntryService service) =>
             {
                 var result = await service.ClockIn(userId);
@@ -37,7 +37,7 @@ namespace TimeTrackingApi.Endpoints
                 return Results.Ok(new { Id = result.Id, ClockIn = result.ClockIn });
             });
 
-            // ADMIN CLOCK OUT (For User)
+            // 3. ADMIN CLOCK OUT (For User)
             group.MapPost("/clockout/{userId}", async (int userId, TimeEntryService service) =>
             {
                 var result = await service.ClockOut(userId);
@@ -45,6 +45,14 @@ namespace TimeTrackingApi.Endpoints
                     return Results.BadRequest(new { message = "No active shift for this user." });
 
                 return Results.Ok(new { Id = result.Id, ClockOut = result.ClockOut });
+            });
+
+            // 4. ✅ NEW: GLOBAL PAYROLL EXPORT
+            // Usage: /admin/time/export-payroll?year=2025&month=10
+            group.MapGet("/export-payroll", async (int year, int month, TimeEntryService service) =>
+            {
+                var csvBytes = await service.GetGlobalPayrollCsv(month, year);
+                return Results.File(csvBytes, "text/csv", $"global-payroll-{year}-{month}.csv");
             });
         }
     }

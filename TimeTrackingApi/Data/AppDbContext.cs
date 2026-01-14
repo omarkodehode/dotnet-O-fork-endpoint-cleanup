@@ -15,6 +15,7 @@ namespace TimeTrackingApi.Data
         public DbSet<Absence> Absences { get; set; } = null!;
 
         public DbSet<Department> Departments {get;set;} = null!;
+        public DbSet<Payroll> Payrolls { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -22,7 +23,8 @@ namespace TimeTrackingApi.Data
 
             modelBuilder.Entity<User>()
                 .HasIndex(u => u.Username)
-                .IsUnique();
+                .IsUnique()
+;
 
             modelBuilder.Entity<Employee>()
                 .HasMany(e => e.TimeEntries)

@@ -9,21 +9,20 @@ namespace TimeTrackingApi.Endpoints
     {
         public static void MapAbsenceEndpoints(this IEndpointRouteBuilder app)
         {
-            // ================= ADMIN ONLY (/absences) =================
+            // ✅ CHANGED: "ManagerOnly" -> "AdminOnly"
+            // This is the global list for HR/Admins. Managers use /manager/absences.
             var adminGroup = app.MapGroup("/absences").RequireAuthorization("AdminOnly");
 
-            // GET ALL
+            // GET ALL (Global)
             adminGroup.MapGet("/", async (AbsenceService service) =>
             {
                 var list = await service.GetAll();
                 
-                // FIX: Map to new fields (StartDate, EndDate, Type)
                 var dtos = list.Select(a => new 
                 {
                     a.Id,
                     a.EmployeeId,
                     EmployeeName = a.Employee?.FullName ?? "Unknown",
-                    // OLD: a.Date, a.Reason
                     StartDate = a.StartDate,
                     EndDate = a.EndDate,
                     Type = a.Type.ToString(),
@@ -40,7 +39,7 @@ namespace TimeTrackingApi.Endpoints
                 return abs is not null ? Results.Ok(abs) : Results.NotFound();
             });
 
-            // CREATE (Admin)
+            // CREATE (Admin Override)
             adminGroup.MapPost("/", async ([FromBody] Absence abs, AbsenceService service) =>
             {
                 var created = await service.Create(abs);

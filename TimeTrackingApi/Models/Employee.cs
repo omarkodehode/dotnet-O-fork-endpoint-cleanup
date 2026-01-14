@@ -18,6 +18,9 @@ namespace TimeTrackingApi.Models
 
         public DateTime HireDate { get; set; }
 
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal HourlyRate { get; set; } = 25.00m;
+
         public int? UserId { get; set; }
         public User? User { get; set; }
 

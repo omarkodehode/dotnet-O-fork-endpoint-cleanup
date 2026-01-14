@@ -19,6 +19,15 @@ export default function MainLayout() {
      // ✅ Only for Admin
   ];
 
+  const managerLinks = [
+    { label: "Manager Dash", path: "/manager", icon: "📊" },
+    { label: "Employees", path: "/manager/employees", icon: "👥" },
+    { label: "Team Absences", path: "/manager/absences", icon: "📅" },
+    { label: "Payroll", path: "/manager/payroll", icon: "💰" },
+    { label: "Clock In/Out", path: "/manager/clock-in-out", icon: "⏱️" }, 
+    { label: "My Absences", path: "/manager/absences", icon: "🤒" },
+  ];
+
   const employeeLinks = [
     { label: "Dashboard", path: "/employee/dashboard", icon: "🏠" },
     { label: "Clock In/Out", path: "/employee/clock-in-out", icon: "⏱️" },
@@ -26,7 +35,9 @@ export default function MainLayout() {
   ];
 
   // Select the correct list based on the role
-  const linksToRender = role === "admin" ? adminLinks : employeeLinks;
+let linksToRender = employeeLinks;
+  if (role === 'admin') linksToRender = adminLinks;
+  else if (role === 'manager') linksToRender = managerLinks;
 
   const handleLogout = () => {
     localStorage.removeItem("token");

@@ -15,14 +15,15 @@ namespace TimeTrackingApi.Services
             _key = key;
         }
 
+        // ✅ FIX: Ensures this method accepts exactly these 3 arguments
         public string GenerateToken(int userId, string username, string role)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var keyBytes = Encoding.UTF8.GetBytes(_key);
 
-            var claims = new[]
+            var claims = new List<Claim>
             {
-               new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
+                new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
                 new Claim(ClaimTypes.Name, username),
                 new Claim(ClaimTypes.Role, role)
             };

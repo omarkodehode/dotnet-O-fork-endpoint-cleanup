@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using TimeTrackingApi.Data;
-using TimeTrackingApi.DTOs;        // ✅ Needed for UserDto
-using TimeTrackingApi.DTOs.Auth;   // ✅ Needed for LoginResponse
+using TimeTrackingApi.DTOs;        
+using TimeTrackingApi.DTOs.Auth;   
 using TimeTrackingApi.Models;
 using TimeTrackingApi.Utils;
 
@@ -24,10 +24,9 @@ namespace TimeTrackingApi.Services
             if (user == null || !PasswordHasher.Verify(password, user.PasswordHash))
                 return null;
 
-            // ✅ FIX 1: Pass all 3 arguments (Id, Username, Role)
+            // ✅ Calls GenerateToken(int, string, string)
             var token = _jwt.GenerateToken(user.Id, user.Username, user.Role);
 
-            // ✅ FIX 2: Use Object Initialization (fixes Constructor error)
             return new LoginResponse
             {
                 Token = token,

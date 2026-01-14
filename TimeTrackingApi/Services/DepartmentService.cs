@@ -1,7 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using TimeTrackingApi.Data;
-using TimeTrackingApi.DTOs;
-
 using TimeTrackingApi.Models;
 
 namespace TimeTrackingApi.Services
@@ -15,36 +13,32 @@ namespace TimeTrackingApi.Services
             _db = db;
         }
 
-        public async Task<List<DepartmentDto>> GetAllDepartments()
+        // ✅ Existing: Simple list
+        public async Task<List<Department>> GetAll()
+        {
+            return await _db.Departments.ToListAsync();
+        }
+
+        // ✅ NEW: Critical for Admin Dashboard (Employees + Managers)
+        public async Task<List<Department>> GetAllWithDetails()
         {
             return await _db.Departments
-                .Select(d => new DepartmentDto
-                {
-                    Id = d.Id,
-                    Name = d.Name,
-                    Description = d.Description,
-                    EmployeeCount = d.Employees.Count
-                })
+                .Include(d => d.Employees)
+                    .ThenInclude(e => e.Manager) // Join to get Manager info
                 .ToListAsync();
         }
 
-        public async Task<Department?> CreateDepartment(CreateDepartmentDto dto)
+        public async Task<Department?> Create(string name)
         {
-            if (await _db.Departments.AnyAsync(d => d.Name == dto.Name))
-                return null;
-
-            var dept = new Department
-            {
-                Name = dto.Name,
-                Description = dto.Description
-            };
-
+            if (await _db.Departments.AnyAsync(d => d.Name == name)) return null;
+            
+            var dept = new Department { Name = name };
             _db.Departments.Add(dept);
             await _db.SaveChangesAsync();
             return dept;
         }
 
-        public async Task<bool> DeleteDepartment(int id)
+        public async Task<bool> Delete(int id)
         {
             var dept = await _db.Departments.FindAsync(id);
             if (dept == null) return false;

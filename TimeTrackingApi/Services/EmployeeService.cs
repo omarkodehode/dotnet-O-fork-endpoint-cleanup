@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using TimeTrackingApi.Data;
 using TimeTrackingApi.Models;
 
+using TimeTrackingApi.DTOs.Employee;
+
 namespace TimeTrackingApi.Services
 {
     public class EmployeeService
@@ -50,7 +52,7 @@ namespace TimeTrackingApi.Services
             return emp;
         }
 
-        public async Task<Employee?> Update(int id, Employee input)
+        public async Task<Employee?> Update(int id, UpdateEmployeeDto input)
         {
             var existing = await _db.Employees.FindAsync(id);
             if (existing == null) return null;
@@ -58,12 +60,12 @@ namespace TimeTrackingApi.Services
             // Oppdater vanlige felter
             existing.FullName = input.FullName;
             existing.Position = input.Position;
-            existing.HireDate = input.HireDate;
+            // existing.HireDate = input.HireDate; // DO NOT UPDATE HIRE DATE and USERID
 
             // Oppdater relasjoner
             existing.DepartmentId = input.DepartmentId;
             existing.ManagerId = input.ManagerId;
-            existing.UserId = input.UserId;
+            // existing.UserId = input.UserId; 
 
             await _db.SaveChangesAsync();
             return existing;

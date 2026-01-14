@@ -1,17 +1,17 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import absenceApi from "../../api/absenceApi"; 
+import absenceApi from "../../api/absenceApi";
 import { toast } from "react-toastify";
 
 export default function EditAbsence() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  
+
   const [formData, setFormData] = useState({
     startDate: "",
     endDate: "",
-    type: "Vacation", 
+    type: "Vacation",
     description: "",
     approved: false
   });
@@ -30,16 +30,16 @@ export default function EditAbsence() {
       try {
         // ✅ 1. Correct Method Name
         const response = await absenceApi.getAbsence(id);
-        const data = response.data || response; 
+        const data = response.data || response;
 
         const formatForInput = (dateStr) => {
-           if (!dateStr) return "";
-           // If backend sends min-date, show empty input
-           if (dateStr.startsWith("0001") || dateStr.startsWith("0000")) {
-             return "";
-           }
-           // Return YYYY-MM-DD
-           return dateStr.split('T')[0];
+          if (!dateStr) return "";
+          // If backend sends min-date, show empty input
+          if (dateStr.startsWith("0001") || dateStr.startsWith("0000")) {
+            return "";
+          }
+          // Return YYYY-MM-DD
+          return dateStr.split('T')[0];
         };
 
         setFormData({
@@ -85,7 +85,7 @@ export default function EditAbsence() {
         startDate: formData.startDate,
         endDate: formData.endDate
       });
-      
+
       toast.success("Absence updated successfully!");
       navigate("/admin/absences");
     } catch (error) {
@@ -100,9 +100,9 @@ export default function EditAbsence() {
   return (
     <div className="max-w-xl mx-auto p-6 bg-white rounded-lg shadow-md mt-10">
       <h2 className="text-2xl font-bold mb-6 text-gray-800">Edit Absence</h2>
-      
+
       <form onSubmit={handleSubmit} className="space-y-4">
-        
+
         {/* START DATE */}
         <div>
           <label className="block text-gray-700 font-semibold mb-1">Start Date</label>

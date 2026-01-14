@@ -15,14 +15,18 @@ export default function Login() {
     setLoading(true);
 
     try {
-      await login(form.username, form.password);
-      const user = JSON.parse(localStorage.getItem("user"));
+      // Login returns the user object directly from AuthProvider
+      const user = await login(form.username, form.password);
       
+      // ✅ FIX: Redirect based on Role
       if (user?.role === "employee") {
         navigate("/employee/dashboard");
+      } else if (user?.role === "manager") {
+        navigate("/manager"); // Goes to Manager Dashboard
       } else {
-        navigate("/admin/dashboard");
+        navigate("/admin/dashboard"); // Default to Admin
       }
+
     } catch (err) {
       console.error(err);
       setError("Invalid credentials. Please try again.");
@@ -115,23 +119,13 @@ export default function Login() {
             disabled={loading}
             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3.5 rounded-xl shadow-lg shadow-indigo-600/20 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed mt-2"
           >
-            {loading ? (
-              <>
-                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span>Signing In...</span>
-              </>
-            ) : (
-              "Sign In"
-            )}
+            {loading ? "Signing In..." : "Sign In"}
           </button>
         </form>
 
         <div className="mt-8 text-center">
           <p className="text-slate-400 text-xs">
-            © 2025 CrAzY Enterprise. Secure Login.
+            © 2025 TimeTrack Enterprise. Secure Login.
           </p>
         </div>
       </div>
