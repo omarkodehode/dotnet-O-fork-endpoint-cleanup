@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import managerApi from "../../api/managerApi";
+// ✅ FIX: Named imports
+import { getTeam } from "../../api/managerApi";
 import { Link } from "react-router-dom";
 
 export default function ManagerTeam() {
@@ -11,7 +12,8 @@ export default function ManagerTeam() {
 
   const fetchTeam = async () => {
     try {
-      const res = await managerApi.getTeam();
+      // ✅ FIX: Direct function call
+      const res = await getTeam();
       setMyTeam(res.data);
     } catch (err) { console.error(err); }
   };
@@ -35,7 +37,7 @@ export default function ManagerTeam() {
               <tr key={e.id} className="hover:bg-slate-50 transition-colors">
                 <td className="py-4 px-6 font-medium text-slate-900">{e.fullName}</td>
                 <td className="py-4 px-6 text-slate-600">{e.position}</td>
-                <td className="py-4 px-6 text-slate-600">{e.department}</td>
+                <td className="py-4 px-6 text-slate-600">{e.department?.name || e.department}</td>
                 <td className="py-4 px-6 text-right">
                   <Link 
                     to={`/admin/employees/edit/${e.id}`} 

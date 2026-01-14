@@ -11,7 +11,7 @@ namespace TimeTrackingApi.Endpoints
         {
             app.MapGet("/api/dashboard", async (EmployeeService empService, TimeEntryService timeService, AbsenceService absService) =>
             {
-                var totalEmployees = (await empService.GetAll()).Count;
+                var totalEmployees = (await empService.GetAllEmployeesAsync()).Count;
                 var activeEntries = await timeService.GetAllActive();
                 var activeCount = activeEntries.Select(t => t.EmployeeId).Distinct().Count();
                 var absencesToday = await absService.GetAbsenceCountForDate(DateTime.UtcNow);

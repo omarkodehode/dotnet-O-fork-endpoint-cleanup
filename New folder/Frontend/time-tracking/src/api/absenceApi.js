@@ -1,30 +1,17 @@
 import api from "./apiClient";
 
-const absenceApi = {
-  // ============ ADMIN METHODS ============
-  // Maps to: GET /api/absences
-  getAbsences: () => api.get("/api/absences"), 
-  
-  // Maps to: POST /api/absences
-  createAbsence: (data) => api.post("/api/absences", data),
-  
-  // Maps to: DELETE /api/absences/{id}
-  deleteAbsence: (id) => api.delete(`/api/absences/${id}`),
+// Admin Methods
+export const getAbsences = () => api.get("/api/absences");
 
-  // Maps to: GET /api/absences/{id}
-  getAbsence: (id) => api.get(`/api/absences/${id}`),
+export const createAbsence = (data) => api.post("/api/absences", data);
 
-  // Maps to: PUT /api/absences/{id}
-  updateAbsence: (id, data) => api.put(`/api/absences/${id}`, data),
+export const deleteAbsence = (id) => api.delete(`/api/absences/${id}`);
 
+export const getAbsence = (id) => api.get(`/api/absences/${id}`);
 
-  // ============ EMPLOYEE METHODS ============
-  // Maps to: GET /api/employee/absences (Standardized)
-  getMyAbsences: () => api.get("/api/employee/absences"),  
-  
-  // Maps to: POST /api/employee/absences (Standardized)
-  // ✅ FIX: Removed trailing slash
-  requestAbsence: (data) => api.post("/api/employee/absences", data), 
-};
+export const updateAbsence = (id, data) => api.put(`/api/absences/${id}`, data);
 
-export default absenceApi;
+// Employee Methods
+export const getMyAbsences = () => api.get("/api/employee/absences");
+
+export const requestAbsence = (data) => api.post("/api/employee/absences", data);

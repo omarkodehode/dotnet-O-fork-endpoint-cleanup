@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import absenceApi from "../../api/absenceApi";
-import employeeApi from "../../api/employeeApi";
+// ✅ FIX: Named imports
+import { createAbsence } from "../../api/absenceApi";
+import { getEmployees } from "../../api/employeeApi";
 
 export default function CreateAbsence() {
   const navigate = useNavigate();
@@ -11,7 +12,7 @@ export default function CreateAbsence() {
     startDate: "",
     endDate: "",
     type: "Vacation",
-    description: "" // Renamed from 'reason' to match backend
+    description: "" 
   });
   const [error, setError] = useState("");
 
@@ -25,7 +26,8 @@ export default function CreateAbsence() {
   ];
 
   useEffect(() => {
-    employeeApi.getAll()
+    // ✅ FIX: Use getEmployees() directly
+    getEmployees()
       .then(data => setEmployees(data || []))
       .catch(err => console.error("Failed to load employees", err));
   }, []);
@@ -40,13 +42,14 @@ export default function CreateAbsence() {
     }
 
     try {
-      await absenceApi.createAbsence({
+      // ✅ FIX: Use createAbsence() directly
+      await createAbsence({
         employeeId: parseInt(form.employeeId),
         startDate: form.startDate,
         endDate: form.endDate,
         type: form.type,
         description: form.description,
-        approved: true // Admins usually auto-approve their own creations
+        approved: true 
       });
       navigate("/admin/absences");
     } catch (err) {
@@ -65,7 +68,6 @@ export default function CreateAbsence() {
       {error && <p className="mb-4 text-red-600 bg-red-50 p-3 rounded text-sm">{error}</p>}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-
         {/* EMPLOYEE SELECT */}
         <div>
           <label htmlFor="employeeId" className="block text-sm font-medium text-slate-700 mb-1">Select Employee</label>

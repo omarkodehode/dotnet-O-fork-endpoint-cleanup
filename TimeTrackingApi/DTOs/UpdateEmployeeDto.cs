@@ -10,11 +10,11 @@ namespace TimeTrackingApi.DTOs
         [JsonPropertyName("position")]
         public string Position { get; set; } = string.Empty;
 
-        [JsonPropertyName("departmentId")]
-        public int? DepartmentId { get; set; }
+        [JsonPropertyName("department")]
+        public string? Department { get; set; } // Changed from DepartmentId
 
-        [JsonPropertyName("managerId")]
-        public int? ManagerId { get; set; }
+        [JsonPropertyName("managerUsername")]
+        public string? ManagerUsername { get; set; } // Changed from ManagerId
 
         [JsonPropertyName("hourlyRate")]
         public decimal HourlyRate { get; set; }

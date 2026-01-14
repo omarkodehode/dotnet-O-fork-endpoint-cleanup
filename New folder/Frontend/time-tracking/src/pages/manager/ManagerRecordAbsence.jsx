@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import managerApi from "../../api/managerApi";
+// ✅ FIX: Named imports
+import { getTeam, createAbsence } from "../../api/managerApi";
 
 export default function ManagerRecordAbsence() {
   const [myTeam, setMyTeam] = useState([]);
@@ -12,13 +13,15 @@ export default function ManagerRecordAbsence() {
   });
 
   useEffect(() => {
-    managerApi.getTeam().then(res => setMyTeam(res.data)).catch(console.error);
+    // ✅ FIX: Direct function call
+    getTeam().then(res => setMyTeam(res.data)).catch(console.error);
   }, []);
 
   const handleCreateAbsence = async (e) => {
     e.preventDefault();
     try {
-      await managerApi.createAbsence({
+      // ✅ FIX: Direct function call
+      await createAbsence({
         ...absenceForm,
         employeeId: parseInt(absenceForm.employeeId)
       });

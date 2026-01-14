@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import employeeApi from "../../api/employeeApi";
-import departmentApi from "../../api/departmentApi";
+// ✅ FIX: Use named imports for all APIs
+import { getEmployee, updateEmployee, getEmployees } from "../../api/employeeApi";
+import { getDepartments } from "../../api/departmentApi";
 import * as authApi from "../../api/auth";
 
 export default function EditEmployee() {
@@ -14,8 +15,8 @@ export default function EditEmployee() {
   const [form, setForm] = useState({
     fullName: "",
     position: "",
-    departmentId: "",
-    managerId: "",
+    department: "",      // String Name
+    managerUsername: "", // String Username
     userId: null,
     hourlyRate: 0,
     vacationDaysBalance: 0
@@ -25,16 +26,20 @@ export default function EditEmployee() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    departmentApi.getDepartments().then(setDepartments).catch(console.error);
-    employeeApi.getAll().then(setEmployees).catch(console.error);
+    // Load lists
+    getDepartments().then(setDepartments).catch(console.error);
+    getEmployees().then(setEmployees).catch(console.error);
 
-    employeeApi.getById(id)
+    // Load current employee
+    getEmployee(id)
       .then(res => {
         setForm({
           fullName: res.fullName || "",
           position: res.position || "",
-          departmentId: res.departmentId || "",
-          managerId: res.managerId || "",
+          // Access nested name safely
+          department: res.department?.name || "", 
+          // Access manager's user username safely
+          managerUsername: res.manager?.user?.username || "", 
           userId: res.userId || null,
           hourlyRate: res.hourlyRate || 0,
           vacationDaysBalance: res.vacationDaysBalance || 0
@@ -49,13 +54,13 @@ export default function EditEmployee() {
       const payload = {
         fullName: form.fullName,
         position: form.position,
-        departmentId: form.departmentId ? parseInt(form.departmentId) : null,
-        managerId: form.managerId ? parseInt(form.managerId) : null,
+        department: form.department,           // Sending Name
+        managerUsername: form.managerUsername, // Sending Username
         hourlyRate: parseFloat(form.hourlyRate),
         vacationDaysBalance: parseInt(form.vacationDaysBalance)
       };
 
-      await employeeApi.update(id, payload);
+      await updateEmployee(id, payload);
       navigate("/admin/employees");
     } catch (err) {
       console.error(err);
@@ -92,34 +97,36 @@ export default function EditEmployee() {
           />
         </div>
 
-        {/* Department Dropdown */}
+        {/* Department - Using Name */}
         <div>
           <label className="block text-sm font-medium text-slate-700">Department</label>
           <select
             className="w-full p-2 border rounded"
-            value={form.departmentId}
-            onChange={e => setForm({ ...form, departmentId: e.target.value })}
+            value={form.department}
+            onChange={e => setForm({ ...form, department: e.target.value })}
           >
             <option value="">-- No Department --</option>
             {departments.map(dept => (
-              <option key={dept.id} value={dept.id}>{dept.name}</option>
+              <option key={dept.id} value={dept.name}>{dept.name}</option>
             ))}
           </select>
         </div>
 
-        {/* Manager Dropdown */}
+        {/* Manager - Using Username */}
         <div>
           <label className="block text-sm font-medium text-slate-700">Manager</label>
           <select
             className="w-full p-2 border rounded"
-            value={form.managerId}
-            onChange={e => setForm({ ...form, managerId: e.target.value })}
+            value={form.managerUsername}
+            onChange={e => setForm({ ...form, managerUsername: e.target.value })}
           >
             <option value="">-- No Manager --</option>
             {employees
-              .filter(emp => emp.id !== parseInt(id))
+              .filter(emp => emp.id !== parseInt(id)) // Exclude self
               .map(emp => (
-                <option key={emp.id} value={emp.id}>{emp.fullName}</option>
+                <option key={emp.id} value={emp.user?.username}>
+                   {emp.fullName} ({emp.user?.username})
+                </option>
               ))}
           </select>
         </div>
@@ -146,7 +153,7 @@ export default function EditEmployee() {
           />
         </div>
 
-        {/* Security / Password Reset Section */}
+        {/* Security Section */}
         <div className="mt-8 bg-gray-50 p-6 rounded-lg border border-gray-200">
           <h3 className="text-lg font-bold text-gray-800 mb-4">Security</h3>
           <div className="flex gap-4 items-end">
@@ -165,8 +172,7 @@ export default function EditEmployee() {
               onClick={async () => {
                 if (!newPassword) return alert("Enter a password");
                 try {
-                  if (!form.userId) return alert("User ID not found for this employee (they might not have a login).");
-
+                  if (!form.userId) return alert("User ID not found.");
                   await authApi.resetPassword({ userId: form.userId, newPassword });
                   alert("Password reset successfully");
                   setNewPassword("");

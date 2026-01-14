@@ -91,7 +91,7 @@ export default function Payroll() {
                             <tr key={p.id} className="hover:bg-gray-50">
                                 <td className="px-4 py-3 font-medium text-gray-900">{p.employee?.fullName || "Unknown"}</td>
                                 <td className="px-4 py-3 text-sm text-gray-500">
-                                    {new Date(p.periodStart).toLocaleDateString()} - {new Date(p.periodEnd).toLocaleDateString()}
+                                    {new Date(p.payPeriodStart).toLocaleDateString()} - {new Date(p.payPeriodEnd).toLocaleDateString()}
                                 </td>
                                 <td className="px-4 py-3">{p.totalHours.toFixed(2)}</td>
                                 <td className="px-4 py-3">${p.hourlyRate.toFixed(2)}</td>
@@ -109,6 +109,6 @@ export default function Payroll() {
                     </tbody>
                 </table>
             </div>
-        </div>
+        </div >
     );
 }

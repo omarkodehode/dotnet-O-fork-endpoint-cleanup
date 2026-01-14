@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import managerApi from "../../api/managerApi";
+// ✅ FIX: Named imports
+import { getPendingAbsences, toggleAbsenceApproval } from "../../api/managerApi";
 
 export default function ManagerApprovals() {
   const [pendingAbsences, setPendingAbsences] = useState([]);
@@ -10,14 +11,16 @@ export default function ManagerApprovals() {
 
   const fetchAbsences = async () => {
     try {
-      const res = await managerApi.getPendingAbsences();
+      // ✅ FIX: Direct function call
+      const res = await getPendingAbsences();
       setPendingAbsences(res.data);
     } catch (err) { console.error(err); }
   };
 
   const handleAbsenceDecision = async (id, approved) => {
     try {
-      await managerApi.toggleAbsenceApproval(id, approved);
+      // ✅ FIX: Direct function call
+      await toggleAbsenceApproval(id, approved);
       fetchAbsences();
     } catch (err) { alert("Action failed."); }
   };

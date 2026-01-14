@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using TimeTrackingApi.Data;
 using TimeTrackingApi.DTOs;
 using TimeTrackingApi.Models;
-using TimeTrackingApi.Utils; // For PasswordHasher
+using TimeTrackingApi.Utils; 
 
 namespace TimeTrackingApi.Services
 {
@@ -15,22 +15,23 @@ namespace TimeTrackingApi.Services
             _context = context;
         }
 
+        // --- GET Methods ---
+
         public async Task<List<Employee>> GetAllEmployeesAsync()
         {
             return await _context.Employees
                 .Include(e => e.Department)
-                .Include(e => e.User) // Include User to get username/role if needed
+                .Include(e => e.User)
                 .OrderBy(e => e.FullName)
                 .ToListAsync();
         }
-
-        public async Task<List<Employee>> GetAll() => await GetAllEmployeesAsync();
 
         public async Task<Employee?> GetById(int id)
         {
             return await _context.Employees
                 .Include(e => e.Department)
                 .Include(e => e.User)
+                .Include(e => e.Manager).ThenInclude(m => m.User) // Include Manager User for Username lookup
                 .FirstOrDefaultAsync(e => e.Id == id);
         }
 
@@ -49,6 +50,8 @@ namespace TimeTrackingApi.Services
                 .ToListAsync();
         }
 
+        // --- CREATE Method ---
+
         public async Task<Employee> CreateEmployeeAsync(EmployeeCreateRequest dto)
         {
             // 1. Create User Account
@@ -59,14 +62,14 @@ namespace TimeTrackingApi.Services
             {
                 Username = dto.Username,
                 PasswordHash = PasswordHasher.Hash(dto.Password),
-                Role = dto.Role,
-                Email = null  // Not provided by frontend
+                Role = dto.Role
+                // Email is ignored/null as requested
             };
 
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            // 2. Handle department lookup by name
+            // 2. Handle Department Lookup (by Name)
             int? departmentId = null;
             if (!string.IsNullOrEmpty(dto.Department))
             {
@@ -75,13 +78,28 @@ namespace TimeTrackingApi.Services
                 departmentId = dept?.Id;
             }
 
-            // 3. Create Employee Profile
+            // 3. Handle Manager Lookup (by Username)
+            int? managerId = null;
+            if (!string.IsNullOrEmpty(dto.ManagerUsername))
+            {
+                var mgrUser = await _context.Users
+                    .FirstOrDefaultAsync(u => u.Username == dto.ManagerUsername);
+                
+                if (mgrUser != null)
+                {
+                    var mgr = await _context.Employees
+                        .FirstOrDefaultAsync(e => e.UserId == mgrUser.Id);
+                    managerId = mgr?.Id;
+                }
+            }
+
+            // 4. Create Employee Profile
             var employee = new Employee
             {
                 FullName = dto.FullName,
                 Position = dto.Position ?? "",
                 DepartmentId = departmentId,
-                ManagerId = null,  // Not provided by frontend
+                ManagerId = managerId,
                 UserId = user.Id,
                 HourlyRate = dto.HourlyRate,
                 VacationDaysBalance = dto.VacationDaysBalance
@@ -93,6 +111,8 @@ namespace TimeTrackingApi.Services
             return employee;
         }
 
+        // --- UPDATE Method ---
+
         public async Task<Employee?> UpdateEmployeeAsync(int id, UpdateEmployeeDto dto)
         {
             var emp = await _context.Employees.FindAsync(id);
@@ -100,13 +120,42 @@ namespace TimeTrackingApi.Services
 
             emp.FullName = dto.FullName;
             emp.Position = dto.Position;
-            emp.DepartmentId = dto.DepartmentId;
-            emp.ManagerId = dto.ManagerId;
             emp.HourlyRate = dto.HourlyRate;
+            emp.VacationDaysBalance = dto.VacationDaysBalance;
 
+            // 1. Update Department (Lookup by Name)
+            if (!string.IsNullOrEmpty(dto.Department))
+            {
+                var dept = await _context.Departments
+                    .FirstOrDefaultAsync(d => d.Name == dto.Department);
+                emp.DepartmentId = dept?.Id;
+            }
+            else
+            {
+                emp.DepartmentId = null;
+            }
+
+            // 2. Update Manager (Lookup by Username)
+            if (!string.IsNullOrEmpty(dto.ManagerUsername))
+            {
+                var mgrUser = await _context.Users
+                    .FirstOrDefaultAsync(u => u.Username == dto.ManagerUsername);
+                
+                if (mgrUser != null)
+                {
+                    var mgr = await _context.Employees
+                        .FirstOrDefaultAsync(e => e.UserId == mgrUser.Id);
+                    emp.ManagerId = mgr?.Id;
+                }
+            }
+            else
+            {
+                emp.ManagerId = null;
+            }
+
+            // 3. Update Password (if provided)
             if (!string.IsNullOrEmpty(dto.Password))
             {
-                // Retrieve the user associated with this employee
                 if (emp.UserId != 0)
                 {
                     var user = await _context.Users.FindAsync(emp.UserId);
@@ -121,6 +170,8 @@ namespace TimeTrackingApi.Services
             return emp;
         }
 
+        // --- DELETE Method ---
+
         public async Task<bool> DeleteEmployeeAsync(int id)
         {
             var emp = await _context.Employees
@@ -130,19 +181,14 @@ namespace TimeTrackingApi.Services
                 
             if (emp == null) return false;
 
-            // 1. Remove all time entries for this employee
-            if (emp.TimeEntries.Any())
-            {
-                _context.TimeEntries.RemoveRange(emp.TimeEntries);
-            }
+            if (emp.TimeEntries.Any()) _context.TimeEntries.RemoveRange(emp.TimeEntries);
+            if (emp.Absences.Any()) _context.Absences.RemoveRange(emp.Absences);
+            
+            // Fix: Remove Payroll records too
+            var payrolls = await _context.Payroll.Where(p => p.EmployeeId == id).ToListAsync();
+            if (payrolls.Any()) _context.Payroll.RemoveRange(payrolls);
 
-            // 2. Remove all absences for this employee
-            if (emp.Absences.Any())
-            {
-                _context.Absences.RemoveRange(emp.Absences);
-            }
-
-            // 3. Set ManagerId to null for any employees managed by this employee
+            // Unlink managed employees
             var managedEmployees = await _context.Employees
                 .Where(e => e.ManagerId == id)
                 .ToListAsync();
@@ -152,14 +198,12 @@ namespace TimeTrackingApi.Services
                 managedEmp.ManagerId = null;
             }
 
-            // 4. Delete linked User account
-            if (emp.UserId != null && emp.UserId != 0)
+            if (emp.UserId != 0)
             {
                 var user = await _context.Users.FindAsync(emp.UserId);
                 if (user != null) _context.Users.Remove(user);
             }
 
-            // 5. Finally, delete the employee
             _context.Employees.Remove(emp);
             await _context.SaveChangesAsync();
             return true;

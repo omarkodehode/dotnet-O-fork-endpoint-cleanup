@@ -19,7 +19,7 @@ public class PayrollService
         var startDate = new DateTime(year, month, 1);
         var endDate = startDate.AddMonths(1).AddDays(-1);
 
-        var query = _context.Employees.AsQueryable();
+        var query = _context.Employees.Include(e => e.Department).AsQueryable();
         if (employeeId.HasValue) query = query.Where(e => e.Id == employeeId.Value);
 
         var employees = await query.ToListAsync();
@@ -34,12 +34,13 @@ public class PayrollService
                             t.ClockIn >= startDate && t.ClockIn <= endDate && t.ClockOut != null)
                 .ToListAsync();
 
-            double totalHours = timeEntries.Sum(t => (t.ClockOut.Value - t.ClockIn).TotalHours);
+            double totalHours = timeEntries.Sum(t => 
+                t.ClockOut.HasValue ? (t.ClockOut.Value - t.ClockIn).TotalHours : 0);
             
             double regularHours = Math.Min(totalHours, 160);
             double overtimeHours = Math.Max(0, totalHours - 160);
 
-            csvBuilder.AppendLine($"{emp.Id},{emp.FullName},{emp.Department},{emp.Position},{totalHours:F2},{regularHours:F2},{overtimeHours:F2},{month},{year}");
+            csvBuilder.AppendLine($"{emp.Id},{emp.FullName},{emp.Department?.Name},{emp.Position},{totalHours:F2},{regularHours:F2},{overtimeHours:F2},{month},{year}");
         }
 
         return Encoding.UTF8.GetBytes(csvBuilder.ToString());

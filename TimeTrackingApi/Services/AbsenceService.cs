@@ -15,7 +15,6 @@ namespace TimeTrackingApi.Services
         }
 
         // --- ALIASES ---
-        public async Task<List<Absence>> GetPendingAbsencesAsync() => await GetPending();
         public async Task<List<Absence>> GetAbsencesForEmployeeAsync(int employeeId) => await GetByEmployee(employeeId);
         public async Task<Absence?> CreateAbsenceAsync(CreateAbsenceDto dto) => await Create(dto.EmployeeId, dto);
         public async Task ApproveAbsenceAsync(int id, bool approved) => await ToggleApproval(id, approved);

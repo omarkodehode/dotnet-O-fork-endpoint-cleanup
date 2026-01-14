@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import departmentApi from "../../api/departmentApi"; // ✅ Default import
+// ✅ FIX: Named imports
+import { getDepartments, createDepartment, deleteDepartment } from "../../api/departmentApi";
 
 export default function Departments() {
   const [departments, setDepartments] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [newDept, setNewDept] = useState("");
-  // Track expanded department for viewing team details
   const [expandedDeptId, setExpandedDeptId] = useState(null);
 
   useEffect(() => {
@@ -14,8 +14,8 @@ export default function Departments() {
 
   const loadDepartments = async () => {
     try {
-      const res = await departmentApi.getDepartments();
-      // Ensure we handle the data correctly whether it comes as res.data or direct array
+      // ✅ Using named export function
+      const res = await getDepartments();
       const data = Array.isArray(res) ? res : (res.data || []);
       setDepartments(data);
     } catch (err) {
@@ -26,7 +26,8 @@ export default function Departments() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await departmentApi.createDepartment({ name: newDept });
+      // ✅ Using named export function
+      await createDepartment({ name: newDept });
       setNewDept("");
       setShowForm(false);
       loadDepartments();
@@ -38,7 +39,8 @@ export default function Departments() {
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure? This department must be empty to delete.")) return;
     try {
-      await departmentApi.deleteDepartment(id);
+      // ✅ Using named export function
+      await deleteDepartment(id);
       loadDepartments();
     } catch (err) {
       alert("Could not delete. Ensure no employees are assigned to it.");
@@ -98,7 +100,6 @@ export default function Departments() {
               </div>
             </div>
 
-            {/* Expanded Details */}
             {expandedDeptId === dept.id && (
               <div className="p-6 bg-white border-t border-slate-100">
                 {dept.employees && dept.employees.length > 0 ? (

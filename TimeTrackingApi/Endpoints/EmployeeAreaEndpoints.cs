@@ -24,7 +24,7 @@ namespace TimeTrackingApi.Endpoints
                 var userId = GetUserId(ctx.User);
                 if (userId == null) return Results.Unauthorized();
                 var balance = await service.GetFlexBalance(userId.Value);
-                return Results.Ok(new { FlexHours = balance });
+                return Results.Ok(balance);
             });
 
             group.MapGet("/status", async (HttpContext ctx, TimeEntryService service) =>

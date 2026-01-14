@@ -14,7 +14,6 @@ export default function Employees() {
     try {
       const data = await employeeApi.getAll();
 
-      // ✅ SAFETY CHECK: Only set state if we received an array
       if (Array.isArray(data)) {
         setEmployees(data);
       } else {
@@ -23,7 +22,6 @@ export default function Employees() {
       }
     } catch (err) {
       console.error("Failed to load employees", err);
-      // Optional: setEmployees([]) here too if you want to be extra safe
     }
   };
 
@@ -49,8 +47,10 @@ export default function Employees() {
     try {
       await employeeApi.delete(id);
       fetchEmployees();
-    } catch {
-      alert("Failed to delete.");
+    } catch (err) {
+      console.error("Delete failed:", err);
+      const msg = err.response?.data?.message || err.message || "Failed to delete employee.";
+      alert(`Error: ${msg}`);
     }
   };
 
@@ -76,7 +76,6 @@ export default function Employees() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {/* ✅ CHECK: Ensure employees is valid before mapping */}
             {Array.isArray(employees) && employees.length > 0 ? (
               employees.map((emp) => (
                 <tr key={emp.id} className="hover:bg-slate-50">

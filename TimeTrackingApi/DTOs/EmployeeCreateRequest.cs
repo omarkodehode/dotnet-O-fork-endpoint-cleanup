@@ -16,8 +16,11 @@ namespace TimeTrackingApi.DTOs
         [JsonPropertyName("role")]
         public string Role { get; set; } = "Employee";
         
-        [JsonPropertyName("department")]  // Frontend sends department name as string
-        public string? Department { get; set; }
+        [JsonPropertyName("department")]
+        public string? Department { get; set; } // Look up by Name
+        
+        [JsonPropertyName("managerUsername")]
+        public string? ManagerUsername { get; set; } // Look up by Username
         
         [JsonPropertyName("position")]
         public string? Position { get; set; }

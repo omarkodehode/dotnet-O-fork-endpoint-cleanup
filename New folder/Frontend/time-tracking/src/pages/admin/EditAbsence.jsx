@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import absenceApi from "../../api/absenceApi";
+// ✅ FIX: Named imports
+import { getAbsence, updateAbsence } from "../../api/absenceApi";
 import { toast } from "react-toastify";
 
 export default function EditAbsence() {
@@ -28,17 +29,15 @@ export default function EditAbsence() {
   useEffect(() => {
     const fetchAbsence = async () => {
       try {
-        // ✅ 1. Correct Method Name
-        const response = await absenceApi.getAbsence(id);
+        // ✅ FIX: Use getAbsence() directly
+        const response = await getAbsence(id);
         const data = response.data || response;
 
         const formatForInput = (dateStr) => {
           if (!dateStr) return "";
-          // If backend sends min-date, show empty input
           if (dateStr.startsWith("0001") || dateStr.startsWith("0000")) {
             return "";
           }
-          // Return YYYY-MM-DD
           return dateStr.split('T')[0];
         };
 
@@ -71,17 +70,15 @@ export default function EditAbsence() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // ✅ 3. Client-Side Validation
     if (!formData.startDate || !formData.endDate) {
       toast.error("Please select a valid Start Date and End Date.");
       return;
     }
 
     try {
-      // ✅ 4. Send Update
-      await absenceApi.updateAbsence(id, {
+      // ✅ FIX: Use updateAbsence() directly
+      await updateAbsence(id, {
         ...formData,
-        // Send plain strings "YYYY-MM-DD"
         startDate: formData.startDate,
         endDate: formData.endDate
       });
@@ -102,7 +99,6 @@ export default function EditAbsence() {
       <h2 className="text-2xl font-bold mb-6 text-gray-800">Edit Absence</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-
         {/* START DATE */}
         <div>
           <label className="block text-gray-700 font-semibold mb-1">Start Date</label>
@@ -187,7 +183,6 @@ export default function EditAbsence() {
             Save Changes
           </button>
         </div>
-
       </form>
     </div>
   );

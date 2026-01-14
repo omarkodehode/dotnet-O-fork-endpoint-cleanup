@@ -15,10 +15,6 @@ namespace TimeTrackingApi.Services
             _db = db;
         }
 
-        // --- ALIASES FOR ENDPOINTS ---
-        public async Task<TimeEntry?> ClockInAsync(int userId) => await ClockIn(userId);
-        public async Task<TimeEntry?> ClockOutAsync(int userId) => await ClockOut(userId);
-        
         public async Task<object> GetStatusAsync(int userId)
         {
             var entry = await GetCurrentEntry(userId);
@@ -141,7 +137,7 @@ namespace TimeTrackingApi.Services
 
         // --- FLEX BALANCE ---
 
-        public async Task<double> GetFlexBalance(int userId)
+        public async Task<object> GetFlexBalance(int userId)
         {
             var entries = await _db.TimeEntries
                 .Where(t => t.Employee != null && t.Employee.UserId == userId && t.ClockOut != null)
@@ -159,7 +155,7 @@ namespace TimeTrackingApi.Services
                 totalWorkedHours += (days * 7.5);
             }
 
-            if (!entries.Any()) return 0;
+            if (!entries.Any()) return new { FlexHours = 0.0, TotalWorked = 0.0, Expected = 0.0 };
             
             var firstDate = entries.Min(e => e.ClockIn).Date;
             var today = DateTime.UtcNow.Date;
@@ -172,7 +168,13 @@ namespace TimeTrackingApi.Services
             }
 
             double expectedHours = businessDays * 7.5;
-            return Math.Round(totalWorkedHours - expectedHours, 2);
+            
+            return new 
+            {
+                FlexHours = Math.Round(totalWorkedHours - expectedHours, 2),
+                TotalWorked = Math.Round(totalWorkedHours, 2),
+                Expected = Math.Round(expectedHours, 2)
+            };
         }
 
         public async Task<double> GetTotalHoursForWeek(DateTime startOfWeek, DateTime endOfWeek)
@@ -193,20 +195,44 @@ namespace TimeTrackingApi.Services
 
         private async Task<object> GetTeamWeeklySummaryLogic(int? managerId, int year, int weekNumber)
         {
-            var query = _db.Employees.Include(e => e.TimeEntries).AsQueryable();
+            var query = _db.Employees
+                .Include(e => e.TimeEntries)
+                .Include(e => e.Absences) // Load Absences
+                .AsQueryable();
+
             if (managerId.HasValue) query = query.Where(e => e.ManagerId == managerId);
 
             var employees = await query.ToListAsync();
             var result = new List<object>();
 
+            // Calculate Week Date Range
+            var startOfWeek = ISOWeek.ToDateTime(year, weekNumber, DayOfWeek.Monday);
+            var endOfWeek = startOfWeek.AddDays(7);
+
             foreach (var emp in employees)
             {
+                // 1. Calculate Worked Hours
                 var weekEntries = emp.TimeEntries
-                    .Where(t => GetIsoWeekOfYear(t.ClockIn) == weekNumber && t.ClockIn.Year == year)
+                    .Where(t => t.ClockIn >= startOfWeek && t.ClockIn < endOfWeek)
                     .ToList();
 
                 var totalHours = weekEntries.Where(t => t.ClockOut.HasValue)
                                             .Sum(t => (t.ClockOut!.Value - t.ClockIn).TotalHours);
+
+                // 2. Calculate Absence Hours
+                double absenceHours = 0;
+                var approvedAbsences = emp.Absences.Where(a => a.Approved).ToList();
+
+                for (var day = startOfWeek; day < endOfWeek; day = day.AddDays(1))
+                {
+                    // Skip weekends if standard work week? Assuming 5 day work week for absence calc
+                    if (day.DayOfWeek == DayOfWeek.Saturday || day.DayOfWeek == DayOfWeek.Sunday) continue;
+
+                    if (approvedAbsences.Any(a => day >= a.StartDate.Date && day <= a.EndDate.Date))
+                    {
+                        absenceHours += 7.5; // Standard daily hours
+                    }
+                }
 
                 var isApproved = weekEntries.Any() && weekEntries.All(t => t.IsApproved);
 
@@ -215,6 +241,7 @@ namespace TimeTrackingApi.Services
                     EmployeeId = emp.Id,
                     Name = emp.FullName,
                     TotalHours = Math.Round(totalHours, 2),
+                    AbsenceHours = Math.Round(absenceHours, 2),
                     IsApproved = isApproved
                 });
             }
@@ -223,13 +250,7 @@ namespace TimeTrackingApi.Services
 
         public async Task<List<WeeklyDetailDto>> GetWeeklyDetailsAsync(int employeeId, int year, int week)
         {
-            var jan1 = new DateTime(year, 1, 1);
-            var daysOffset = DayOfWeek.Monday - jan1.DayOfWeek;
-            var firstMonday = jan1.AddDays(daysOffset);
-            var weekNum = ISOWeek.GetWeekOfYear(jan1);
-            if (weekNum > 1) firstMonday = firstMonday.AddDays(-7); 
-            
-            var startOfWeek = firstMonday.AddDays((week - 1) * 7);
+            var startOfWeek = ISOWeek.ToDateTime(year, week, DayOfWeek.Monday);
             var endOfWeek = startOfWeek.AddDays(7);
 
             var entries = await _db.TimeEntries
@@ -248,10 +269,7 @@ namespace TimeTrackingApi.Services
 
         public async Task ApproveWeekAsync(int employeeId, int year, int week)
         {
-            var jan1 = new DateTime(year, 1, 1);
-            var daysOffset = DayOfWeek.Monday - jan1.DayOfWeek;
-            var firstMonday = jan1.AddDays(daysOffset);
-            var startOfWeek = firstMonday.AddDays((week - 1) * 7);
+            var startOfWeek = ISOWeek.ToDateTime(year, week, DayOfWeek.Monday);
             var endOfWeek = startOfWeek.AddDays(7);
 
             var entries = await _db.TimeEntries
@@ -296,12 +314,6 @@ namespace TimeTrackingApi.Services
             return Encoding.UTF8.GetBytes(sb.ToString());
         }
 
-        private static int GetIsoWeekOfYear(DateTime time)
-        {
-            DayOfWeek day = CultureInfo.InvariantCulture.Calendar.GetDayOfWeek(time);
-            if (day >= DayOfWeek.Monday && day <= DayOfWeek.Wednesday) time = time.AddDays(3);
-            return CultureInfo.InvariantCulture.Calendar.GetWeekOfYear(time, CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
-        }
     }
 
     public class WeeklyDetailDto

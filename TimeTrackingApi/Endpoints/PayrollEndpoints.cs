@@ -25,8 +25,17 @@ namespace TimeTrackingApi.Endpoints
             // POST /payroll/generate - Generate payroll for a period
             group.MapPost("/generate", async ([FromBody] PayrollGenerateRequest req, AppDbContext db) =>
             {
-                var start = req.StartDate.ToUniversalTime();
-                var end = req.EndDate.ToUniversalTime();
+                // Fix: Ensure dates are handled as full days in UTC
+                var start = DateTime.SpecifyKind(req.StartDate.Date, DateTimeKind.Utc);
+                var end = DateTime.SpecifyKind(req.EndDate.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc);
+                
+                var endUtc = DateTime.SpecifyKind(req.EndDate.Date, DateTimeKind.Utc);
+                
+                // Cleanup existing payroll for this exact period to avoid duplicates
+                var existing = await db.Payroll
+                    .Where(p => p.PayPeriodStart == start && p.PayPeriodEnd == endUtc) 
+                    .ToListAsync();
+                if (existing.Any()) db.Payroll.RemoveRange(existing);
 
                 var employees = await db.Employees
                     .Include(e => e.TimeEntries)
@@ -49,7 +58,7 @@ namespace TimeTrackingApi.Endpoints
                     {
                         EmployeeId = emp.Id,
                         PayPeriodStart = start,
-                        PayPeriodEnd = end,
+                        PayPeriodEnd = endUtc, // Store the logical end date
                         TotalHours = (decimal)Math.Round(totalHours, 2),
                         GrossPay = Math.Round(gross, 2),
                         NetPay = Math.Round(net, 2),

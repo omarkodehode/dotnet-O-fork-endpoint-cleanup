@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import managerApi from "../../api/managerApi";
+// ✅ FIX: Named imports
+import { getTeam, exportPayroll } from "../../api/managerApi";
 
 export default function ManagerPayroll() {
   const [employees, setEmployees] = useState([]);
-  const [selectedEmployee, setSelectedEmployee] = useState(""); // Empty = All
+  const [selectedEmployee, setSelectedEmployee] = useState("");
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState(new Date().getMonth() + 1);
 
@@ -13,7 +14,8 @@ export default function ManagerPayroll() {
 
   const loadEmployees = async () => {
     try {
-      const res = await managerApi.getTeam();
+      // ✅ FIX: Direct function call
+      const res = await getTeam();
       setEmployees(res.data);
     } catch (err) {
       console.error("Failed to load team");
@@ -23,12 +25,11 @@ export default function ManagerPayroll() {
   const handleExport = async (e) => {
     e.preventDefault();
     try {
-      // Pass null if empty string, otherwise parse ID
       const empId = selectedEmployee ? parseInt(selectedEmployee) : null;
       
-      const res = await managerApi.exportPayroll(year, month, empId);
+      // ✅ FIX: Direct function call
+      const res = await exportPayroll(year, month, empId);
       
-      // Handle Download
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement('a');
       link.href = url;

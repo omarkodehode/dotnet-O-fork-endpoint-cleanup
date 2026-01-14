@@ -3,7 +3,7 @@ import api from "../../api/apiClient";
 
 export default function EmployeeDashboard() {
   const [history, setHistory] = useState([]);
-  const [balance, setBalance] = useState(0);
+  const [balanceData, setBalanceData] = useState({ flexHours: 0, totalWorked: 0, expected: 0 });
 
   useEffect(() => {
     fetchHistory();
@@ -20,7 +20,7 @@ export default function EmployeeDashboard() {
   const fetchBalance = async () => {
     try {
       const res = await api.get("/api/employee/flex-balance");
-      setBalance(res.data.flexHours);
+      setBalanceData(res.data);
     } catch (err) { console.error("Failed to load balance"); }
   };
 
@@ -31,10 +31,24 @@ export default function EmployeeDashboard() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-          <h3 className="text-slate-500 text-sm font-bold uppercase mb-2">Flex Balance</h3>
-          <p className={`text-4xl font-bold ${balance >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-            {balance > 0 ? '+' : ''}{balance}h
-          </p>
+          <h3 className="text-slate-500 text-sm font-bold uppercase mb-2">Total Worked</h3>
+          <div className="flex items-center gap-6">
+            <p className="text-4xl font-bold text-slate-800">
+              {balanceData.totalWorked}h
+            </p>
+            <div className="text-sm text-slate-500 border-l border-slate-200 pl-6">
+              <div className="mb-1">
+                <span className={`font-semibold text-lg ${balanceData.flexHours >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                  {balanceData.flexHours > 0 ? '+' : ''}{balanceData.flexHours}h
+                </span>
+                <span className="ml-2 text-xs uppercase tracking-wide">Flex Balance</span>
+              </div>
+              <div>
+                <span className="font-semibold text-slate-700 text-lg">{balanceData.expected}h</span>
+                <span className="ml-2 text-xs uppercase tracking-wide">Expected</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -56,7 +70,6 @@ export default function EmployeeDashboard() {
           <tbody className="divide-y divide-slate-100">
             {history.map(t => (
               <tr key={t.id} className="hover:bg-slate-50">
-                {/* ✅ FIX: Using clockIn / clockOut */}
                 <td className="p-4 font-medium text-slate-700">
                   {new Date(t.clockIn).toLocaleDateString()}
                 </td>

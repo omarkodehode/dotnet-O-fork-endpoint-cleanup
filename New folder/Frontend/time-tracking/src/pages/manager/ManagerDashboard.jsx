@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import managerApi from "../../api/managerApi";
+import { getWeeklySummary, getWeeklyDetails, approveWeek } from "../../api/managerApi";
 
 // Helper to get week number
 const getWeekNumber = (d) => {
@@ -13,7 +13,7 @@ export default function ManagerDashboard() {
   const [currentWeek, setCurrentWeek] = useState(getWeekNumber(new Date()));
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [teamSummary, setTeamSummary] = useState([]);
-  
+
   // Modal State
   const [selectedEmployeeDetails, setSelectedEmployeeDetails] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -24,14 +24,14 @@ export default function ManagerDashboard() {
 
   const fetchSummary = async () => {
     try {
-      const res = await managerApi.getWeeklySummary(currentYear, currentWeek);
+      const res = await getWeeklySummary(currentYear, currentWeek);
       setTeamSummary(res.data);
     } catch (err) { console.error(err); }
   };
 
   const handleViewDetails = async (empId, empName) => {
     try {
-      const res = await managerApi.getWeeklyDetails(empId, currentYear, currentWeek);
+      const res = await getWeeklyDetails(empId, currentYear, currentWeek);
       setSelectedEmployeeDetails({ name: empName, entries: res.data });
       setIsModalOpen(true);
     } catch (err) {
@@ -42,7 +42,7 @@ export default function ManagerDashboard() {
   const handleApproveWeek = async (empId) => {
     if (!window.confirm("Lock this week for this employee?")) return;
     try {
-      await managerApi.approveWeek(empId, currentYear, currentWeek);
+      await approveWeek(empId, currentYear, currentWeek);
       fetchSummary();
       if (isModalOpen) setIsModalOpen(false);
     } catch (err) { alert("Failed to approve."); }
@@ -65,9 +65,9 @@ export default function ManagerDashboard() {
           <thead>
             <tr className="border-b border-slate-100 text-slate-500 text-xs uppercase tracking-wider">
               <th className="py-3 px-2">Employee</th>
-              <th className="py-3 px-2">Total Hours</th>
+              <th className="py-3 px-2">Online</th>
+              <th className="py-3 px-2">Absence</th>
               <th className="py-3 px-2">Status</th>
-              <th className="py-3 px-2 text-right">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -75,31 +75,16 @@ export default function ManagerDashboard() {
               <tr key={s.employeeId} className="border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors">
                 <td className="py-4 px-2 font-medium text-slate-900">{s.name}</td>
                 <td className="py-4 px-2 text-slate-600">{s.totalHours}h</td>
+                <td className="py-4 px-2 text-slate-500">{s.absenceHours || 0}h</td>
                 <td className="py-4 px-2">
-                  {s.isApproved
-                    ? <span className="text-emerald-700 text-xs font-bold bg-emerald-100 px-2 py-1 rounded-full border border-emerald-200">APPROVED</span>
-                    : <span className="text-amber-700 text-xs font-bold bg-amber-100 px-2 py-1 rounded-full border border-amber-200">OPEN</span>}
-                </td>
-                <td className="py-4 px-2 text-right space-x-2">
-                  <button
-                    onClick={() => handleViewDetails(s.employeeId, s.name)}
-                    className="text-xs font-medium border border-slate-300 text-slate-600 px-3 py-1.5 rounded hover:bg-white hover:border-slate-400 bg-slate-50"
-                  >
-                    View
-                  </button>
-                  {!s.isApproved && (
-                    <button
-                      onClick={() => handleApproveWeek(s.employeeId)}
-                      className="text-xs font-medium bg-indigo-600 text-white px-3 py-1.5 rounded hover:bg-indigo-700 shadow-sm shadow-indigo-200"
-                    >
-                      Approve
-                    </button>
-                  )}
+                  {s.absenceHours > 0
+                    ? <span className="text-amber-700 text-xs font-bold bg-amber-100 px-2 py-1 rounded-full border border-amber-200">ABSENCE</span>
+                    : <span className="text-emerald-700 text-xs font-bold bg-emerald-100 px-2 py-1 rounded-full border border-emerald-200">ACTIVE</span>}
                 </td>
               </tr>
             ))}
             {teamSummary.length === 0 && (
-                <tr><td colSpan="4" className="py-8 text-center text-slate-400 italic">No time entries found for this week.</td></tr>
+              <tr><td colSpan="4" className="py-8 text-center text-slate-400 italic">No time entries found for this week.</td></tr>
             )}
           </tbody>
         </table>
@@ -126,13 +111,12 @@ export default function ManagerDashboard() {
                   <tbody className="divide-y divide-slate-100">
                     {selectedEmployeeDetails.entries.map((e, idx) => (
                       <tr key={idx} className="hover:bg-slate-50">
-                        {/* ✅ FIX: Using clockIn / clockOut */}
                         <td className="p-3 text-slate-700">{new Date(e.clockIn).toLocaleDateString()}</td>
                         <td className="p-3 text-slate-500">{new Date(e.clockIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
                         <td className="p-3 text-slate-500">
-                            {e.clockOut 
-                                ? new Date(e.clockOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
-                                : <span className="text-emerald-600 font-bold text-xs">Active</span>}
+                          {e.clockOut
+                            ? new Date(e.clockOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                            : <span className="text-emerald-600 font-bold text-xs">Active</span>}
                         </td>
                         <td className="p-3 text-right font-medium text-slate-900">{e.hours.toFixed(2)}h</td>
                       </tr>

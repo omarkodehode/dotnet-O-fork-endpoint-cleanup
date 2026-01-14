@@ -39,7 +39,7 @@ namespace TimeTrackingApi.Endpoints
             {
                 var managerId = await GetCurrentEmployeeId(ctx, empService);
                 if (managerId == null) return Results.Unauthorized();
-                var summary = await timeService.GetWeeklySummaryForManagerAsync(year, week); // Ensure Service method matches this name or logic
+                var summary = await timeService.GetWeeklySummaryForManagerAsync(year, week);
                 return Results.Ok(summary);
             });
 
@@ -49,8 +49,15 @@ namespace TimeTrackingApi.Endpoints
                 var managerId = await GetCurrentEmployeeId(ctx, empService);
                 if (managerId == null) return Results.Unauthorized();
                 
-                var details = await timeService.GetWeeklyDetailsAsync(employeeId, year, week);
-                return Results.Ok(details);
+                try
+                {
+                    var details = await timeService.GetWeeklyDetailsAsync(employeeId, year, week);
+                    return Results.Ok(details);
+                }
+                catch (Exception ex)
+                {
+                    return Results.Problem($"Error getting details: {ex.Message}");
+                }
             });
 
             // 4. Approve Week (Matches Frontend Query Params: ?employeeId=X&year=Y&week=Z)
@@ -59,8 +66,15 @@ namespace TimeTrackingApi.Endpoints
                 var managerId = await GetCurrentEmployeeId(ctx, empService);
                 if (managerId == null) return Results.Unauthorized();
                 
-                await timeService.ApproveWeekAsync(employeeId, year, week);
-                return Results.Ok(new { message = "Week approved." });
+                try
+                {
+                    await timeService.ApproveWeekAsync(employeeId, year, week);
+                    return Results.Ok(new { message = "Week approved." });
+                }
+                catch (Exception ex)
+                {
+                    return Results.Problem($"Error approving week: {ex.Message}");
+                }
             });
 
             // 5. Get Pending Absences (Matches Frontend: /manager/absences/pending)
@@ -109,13 +123,20 @@ namespace TimeTrackingApi.Endpoints
             });
 
             // 8. Export Payroll
-            group.MapGet("/export-payroll", async (int year, int month, int? employeeId, HttpContext ctx, EmployeeService empService, PayrollService payrollService) => // Inject PayrollService
+            group.MapGet("/export-payroll", async (int year, int month, int? employeeId, HttpContext ctx, EmployeeService empService, PayrollService payrollService) =>
             {
                 var managerId = await GetCurrentEmployeeId(ctx, empService);
                 if (managerId == null) return Results.Unauthorized();
 
-                var csvBytes = await payrollService.GeneratePayrollCsvAsync(year, month, employeeId); 
-                return Results.File(csvBytes, "text/csv", $"payroll-{year}-{month}.csv");
+                try
+                {
+                    var csvBytes = await payrollService.GeneratePayrollCsvAsync(year, month, employeeId); 
+                    return Results.File(csvBytes, "text/csv", $"payroll-{year}-{month}.csv");
+                }
+                catch (Exception ex)
+                {
+                     return Results.Problem($"Error exporting payroll: {ex.Message}");
+                }
             });
         }
     }
